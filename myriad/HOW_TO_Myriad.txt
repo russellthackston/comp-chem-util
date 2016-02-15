@@ -1,0 +1,112 @@
+Sample web service interaction (Benchmarking)
+---------------------------------------------
+
+Benchmarking is the process by which a set of jobs are run by a set of
+machines, with each machine executing the entire job set. This allows
+the set's performance to be compared across different machines.
+
+Scenario: A new workstation is brought online to run PSI4 benchmarking jobs. 
+The workstation registers itself with the web service, then requests a 
+benchmarking job. Once the job is complete, the results are sent to the web
+service, in the form of an output.dat, time.out, and standard out. A new 
+benchmarking job is requested and the cycle repeats until the web service
+"runs out" of benchmarking jobs for the workstation.
+
+Step 1:
+POST http://{web_service_url}/api/machines/{mac_address}?name={client_name}
+	Content-Type: text/plain
+
+	The web service will register this workstation as a new machine and assign
+	a new MachineID. The MAC address/name combination must be unique. This 
+	allows for the same LiveUSB or virtual machine image to be run on different
+	physical (or virtual) computers without intermingling the results (i.e.
+	same name but different MAC addresses).
+
+Step 2:
+GET http://{web_service_url}/api/benchmarking/{job_set}?machineID={machineID}
+	Content-Type: text/plain
+
+	The web service will look in the database for jobs that belong to the job
+	set identified by {job_set}, ignoring jobs and job sets that have been 
+	archived. It will then cross-reference that list with jobs that have 
+	already been completed by the workstation identified by {machineID}, 
+	removing any completed jobs. It will then return the input.dat file for
+	the first job in the list for the workstation to run through PSI4.
+	The JobID will be included on the first line of the input.dat file in the
+	format "# JobID: 999".
+
+Step 3:
+POST http://{web_service_url}/api/output/{jobID}?machineID={machineID}&filename={filename}
+	Content-Type: text/plain
+
+	Upon completion of the PSI4 job, the workstation will use the url listed 
+	above to save the output.dat file to the database. The contents of the 
+	output.dat file will be included in the message in the body of the HTTP 
+	request. The jobID, machineID, and filename should be included in the URL.
+
+[Repeat steps 2 and 3 until the benchmarking queue is exhausted.]
+
+	The web service will notify the workstation that no more jobs exist in the
+	benchmarking job set by responding with an HTTP 404 message to the request
+	in step 2. At this point, the workstation can move to another benchmarking
+	job set or cease operations.
+
+
+
+
+Sample web service interaction (Job set completion)
+---------------------------------------------------
+
+Job sets represent a series of jobs that must be completed without regard
+for which individual machine executed a particular job in the set. This allows
+a larger calculation (job set) to be completed by an unspecified machine or
+machine(s).
+
+Scenario: A new workstation is brought online to run PSI4 jobs from a particular
+job set. The workstation registers itself with the web service, then requests a 
+job from the job set. Once the job is complete, the results are sent to the web
+service, in the form of an output.dat, time.out, and standard out. A new 
+job is requested from the job set and the cycle repeats until the web service
+"runs out" of jobs in the job set.
+
+Step 1:
+POST http://{web_service_url}/api/machines/{mac_address}?name={client_name}
+	Content-Type: text/plain
+
+	The web service will register this workstation as a new machine and assign
+	a new MachineID. The MAC address/name combination must be unique. This 
+	allows for the same LiveUSB or virtual machine image to be run on different
+	physical (or virtual) computers without intermingling the results (i.e.
+	same name but different MAC addresses).
+
+Step 2:
+GET http://{web_service_url}/api/jobrunner/{job_set}
+	Content-Type: text/plain
+
+	The web service will look in the database for jobs that belong to the job
+	set identified by {job_set}, ignoring jobs and job sets that have been 
+	archived. It will then cross-reference that list with jobs that have 
+	already been completed by any workstation, removing any completed jobs. 
+	It will then return the input.dat file for the first job in the list to 
+	run through PSI4. The JobID will be included on the first line of the 
+	input.dat file in the format "# JobID: 999".
+
+Step 3:
+POST http://{web_service_url}/api/output/{jobID}?machineID={machineID}&jobSetID={jobSetID}
+	Content-Type: text/plain
+
+	Upon completion of the PSI4 job, the workstation will use the url listed 
+	above to save the output.dat file to the database. The contents of the 
+	input.dat file will be included in the message in the body of the HTTP 
+	request. The jobID, machineID, and jobSetID should be included 
+	in the URL.
+
+[Repeat steps 2 and 3 until the job set queue is exhausted.]
+
+	The web service will notify the workstation that no more jobs exist in the
+	job set by responding with an HTTP 404 message to the request in step 2. 
+	At this point, the workstation can move to another benchmarking job set 
+	or cease operations.
+
+
+
