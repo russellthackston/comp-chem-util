@@ -4,7 +4,7 @@ import argparse
 import csv
 import itertools
 
-parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example #1: "python lcart.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4]. Example #2: "python lcart.py 5 24 -m 2:[17-23] -o 5x24.txt" will write the product of 24 repetitions of [0,1,2,3,4] to a file named 5x24.txt, skipping rows that fail a mod 2 check of the sum of digits 17-23.')
+parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example #1: "python taylor.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4]. Example #2: "python taylor.py 5 24 -m 2:[17-23] -o 5x24.txt" will write the product of 24 repetitions of [0,1,2,3,4] to a file named 5x24.txt, skipping rows that fail a mod 2 check of the sum of digits 17-23.')
 parser.add_argument("digits", help="The number of digits in the array [0..digits]", type=int)
 parser.add_argument("reps", help="The number of repetitions of the set", type=int)
 parser.add_argument("-s", "--start", help="Only print lines with indexes greater than or equal to (digits^start)", type=int)
