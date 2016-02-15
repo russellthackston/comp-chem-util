@@ -17,7 +17,7 @@ parser.add_argument("-i", "--indexesOnly", help="Only write row indexes to outpu
 parser.add_argument("-l", "--silent", help="Suppress all output to stdout", action="store_true")
 parser.add_argument("-u", "--unfiltered", help="Skip the filtering step and produce a complete cartesian product", action="store_true")
 parser.add_argument("-v", "--verbose", help="Produce verbose output", action="store_true")
-parser.add_argument('--version', action='version', version='Taylor Series generation script v1.0. Latest version and full documentation available at https://github.com/russellthackston/comp-chem-util in the 'misc' folder. Report any bugs or issues at the above web address.')
+parser.add_argument('--version', action='version', version='Taylor Series generation script v1.0. Latest version and full documentation available at https://github.com/russellthackston/comp-chem-util in the "misc" folder. Report any bugs or issues at the above web address.')
 args=parser.parse_args()
 
 modchecks=None
