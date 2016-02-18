@@ -4,16 +4,16 @@ import argparse
 import csv
 import itertools
 
-parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example #1: "python taylor.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4]. Example #2: "python taylor.py 5 24 -m 2:[17-23] -o 5x24.txt" will write the product of 24 repetitions of [0,1,2,3,4] to a file named 5x24.txt, skipping rows that fail a mod 2 check of the sum of digits 17-23.')
+parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example #1: "python taylor.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4]. Example #2: "python taylor.py 5 24 -m 2:[17-23]" will print the product of 24 repetitions of [0,1,2,3,4], skipping rows that fail a mod 2 check of the sum of digits 17-23.')
 parser.add_argument("digits", help="The number of digits in the array [0..digits]", type=int)
 parser.add_argument("reps", help="The number of repetitions of the set", type=int)
 parser.add_argument("-s", "--start", help="Only print lines with indexes greater than or equal to (digits^start)", type=int)
 parser.add_argument("-e", "--end", help="Only print lines with indexes less than or equal to (digits^end)", type=int)
 parser.add_argument("-m", "--modcheck", help="Enables a mod check of one of more subsets of digits", type=str)
 parser.add_argument("-q", "--equivalence", help="Enables an equivalence check of one or more subsets of digits", type=str)
-parser.add_argument("-o", "--outputFile", help="Write output to file", type=str)
-parser.add_argument("-d", "--displacements", help="Generate displacements (instead of force constants)", action="store_true")
-parser.add_argument("-i", "--indexesOnly", help="Only write row indexes to output", action="store_true")
+parser.add_argument("-f", "--forceConstants", help="Write force constant values to force.txt", action="store_true")
+parser.add_argument("-d", "--displacements", help="Write displacement values to disp.txt", action="store_true")
+parser.add_argument("-i", "--indexes", help="Write row indexes to indexes.txt", action="store_true")
 parser.add_argument("-l", "--silent", help="Suppress all output to stdout", action="store_true")
 parser.add_argument("-u", "--unfiltered", help="Skip the filtering step and produce a complete cartesian product", action="store_true")
 parser.add_argument("-v", "--verbose", help="Produce verbose output", action="store_true")
@@ -179,9 +179,15 @@ def main(startIndex,endIndex):
 			print "# Parsed mod check " + str(args.equivalence) + " into " + str(eqchecks)
 
 	# Open the output file, if requested
-	if args.outputFile:
-		f = open(args.outputFile, 'w')
-		writer = csv.writer(f)
+	writeAll=(not args.indexes and not args.displacements and not args.forceConstants)
+	if args.indexes or writeAll:
+		fIndexes = open('indexes.txt', 'w')
+	if args.displacements or writeAll:
+                fDisp = open('disp.txt', 'w')
+                writerDisp = csv.writer(fDisp)
+	if args.forceConstants or writeAll:
+                fForce = open('force.txt', 'w')
+                writerForce = csv.writer(fForce)
 
 	rowCount = 0
 	i=(len(digits)**startIndex)-1
@@ -192,29 +198,14 @@ def main(startIndex,endIndex):
 		old_i=i
 		if args.unfiltered:
 			rowCount+=1
-			if args.outputFile:
-				if args.indexesOnly:
-					writer.writerow([i])
-				else:
-					if args.displacements:
-						lst=displacements(e)
-						for l in lst:
-							writer.writerow(l)
-					else:
-						writer.writerow(e)
-				if rowCount % args.reps == 0 and not args.silent:
-					sys.stdout.write('.')
-					sys.stdout.flush()
-			else:
-				if args.indexesOnly:
-					print(i)
-				else:
-					if args.displacements:
-						lst=displacements(e)
-						for l in lst:
-							print str(l)[1:-1].replace(' ','')
-					else:
-						print str(e)[1:-1].replace(' ','')
+			if args.indexes or writeAll:
+				fIndexes.write(str(i)+"\n")
+			if args.displacements or writeAll:
+				lst=displacements(e)
+				for l in lst:
+                                	writerDisp.writerow(l)
+			if args.forceConstants or writeAll:
+                                writerForce.writerow(e)
 			i+=1
 		else:
 			# Check if numbers in array total to 4 or greater and skip to next block
@@ -259,37 +250,25 @@ def main(startIndex,endIndex):
 							print '# Failed equivalence check'
 					rowCount+=1
 				else:
-					if args.outputFile:
-						if args.indexesOnly:
-							writer.writerow([i])
-						else:
-							if args.displacements:
-								lst=displacements(e)
-								for l in lst:
-									writer.writerow(l)
-							else:
-								writer.writerow(e)
-						if rowCount % args.reps == 0 and not args.silent:
-							sys.stdout.write('.')
-							sys.stdout.flush()
-					else:
-						if args.indexesOnly:
-							print(i)
-						else:
-							if args.displacements:
-								lst=displacements(e)
-								for l in lst:
-									print str(l)[1:-1].replace(' ','')
-							else:
-								print str(e)[1:-1].replace(' ','')
+					if args.indexes or writeAll:
+		                                fIndexes.write(str(i)+"\n")
+                		        if args.displacements or writeAll:
+						lst=displacements(e)
+						for l in lst:
+                                			writerDisp.writerow(l)
+                		        if args.forceConstants or writeAll:
+		                                writerForce.writerow(e)
 			else:
 				if args.verbose and not args.silent:
 					print '# Skipped ' + str(e) + ' due to array total greater than 4'
 
-	if args.outputFile:
-		f.close()
-		if not args.silent:
-			print ''
+	if args.indexes or writeAll:
+		fIndexes.close()
+        if args.displacements or writeAll:
+                fDisp.close()
+        if args.forceConstants or writeAll:
+                fForce.close()
+
 	if args.verbose and not args.silent:
 		print '# Done creating cartesion product'
 
