@@ -4,6 +4,7 @@ BASE_URL="unknown"
 MACHINE_NAME="unknown"
 BENCHMARK_JOBSET_NUMBER="unknown"
 JOBSET_NUMBER="unknown"
+JOB_TYPE="unknown"
 
 while [[ $# > 1 ]]
 do
@@ -19,10 +20,12 @@ do
 		;;
 		-b)
 		BENCHMARK_JOBSET_NUMBER="$2"
+		JOB_TYPE="bench"
 		shift
 		;;
 		-j)
 		JOBSET_NUMBER="$2"
+		JOB_TYPE="set"
 		shift
 		;;
 	esac
@@ -33,22 +36,18 @@ done
 if [[ "$BASE_URL" != "unknown" ]]; then
 	echo $BASE_URL > url.txt
 fi
-
 if [[ "$MACHINE_NAME" != "unknown" ]]; then
-	echo $MAC_NAME > name.txt
+	echo $MACHINE_NAME > name.txt
 fi
-
 if [[ "$BENCHMARK_JOBSET_NUMBER" != "unknown" ]]; then
 	echo $BENCHMARK_JOBSET_NUMBER > bench.txt
 fi
-
 if [[ "$JOBSET_NUMBER" != "unknown" ]]; then
 	echo $JOBSET_NUMBER > jobset.txt
 fi
 
 # http://myriad.elasticbeanstalk.com/api
 SCRATCH=/tmp
-
 
 function startJob() {
 	# Make a folder for this job
@@ -58,7 +57,13 @@ function startJob() {
 
 	# Get the next job in the jobset
 	echo Getting the next job in the jobset
-	INPUT_REQUEST="${BASE_URL}"'/benchmarking/'"${BENCHMARK_JOBSET_NUMBER}"'?machineID='"${MAC_ID}"
+	if [[ "$JOB_TYPE" == "bench" ]]; then
+		INPUT_REQUEST="${BASE_URL}"'/benchmarking/'"${BENCHMARK_JOBSET_NUMBER}"'?machineID='"${MAC_ID}"
+	fi
+	if [[ "$JOB_TYPE" == "set" ]]; then
+                INPUT_REQUEST="${BASE_URL}"'/jobrunner/'"${JOBSET_NUMBER}"'?machineID='"${MAC_ID}"
+        fi
+
 	echo Accessing web service: $INPUT_REQUEST
 	curl --request GET ${INPUT_REQUEST} -w "\n\n# Response Code: %{http_code}\n" -d "" > input.dat
 	echo Input.dat file written to $(pwd)
@@ -152,30 +157,34 @@ MAC_ID=$(curl --request POST ${POST_REQUEST} -d "")
 echo $MAC_ID > id.txt
 echo Your machine ID is $MAC_ID
 
-#If the jobset file exists, read its contents
+#If a jobset file exists, read its contents
 BENCHMARK_JOBSET_NUMBER=""
 if [[ -f bench.txt ]]; then
 	BENCHMARK_JOBSET_NUMBER=$(cat bench.txt)
+	if [ "$BENCHMARK_JOBSET_NUMBER" != "" ]; then
+		JOB_TYPE="bench"
+	fi
+fi
+if [[ -f jobset.txt ]]; then
+        JOBSET_NUMBER=$(cat jobset.txt)
+	if [ "$JOBSET_NUMBER" != "" ]; then
+		JOB_TYPE="set"
+	fi
 fi
 
 # If a jobset number was found in the file, use it
-if [ "$BENCHMARK_JOBSET_NUMBER" != "" ]; then
-	echo Jobset number $BENCHMARK_JOBSET_NUMBER found in bench.txt
-else
-# If there was not a value in the jobset file, ask the user for it
-
-	# Get the list of job sets
-	JOBSETS_REQUEST="${BASE_URL}"'/jobsets'
-	echo Accessing the web service: $JOBSETS_REQUEST
-	curl --request GET ${JOBSETS_REQUEST}
-
-	# Ask the user which jobset to run
-	echo
-	echo -n "Please enter a jobset number and press [ENTER]: "
-	read BENCHMARK_JOBSET_NUMBER
-	echo $BENCHMARK_JOBSET_NUMBER > bench.txt
-	echo You have selected jobset number $BENCHMARK_JOBSET_NUMBER
-fi
+case "$JOB_TYPE" in
+	bench)
+	echo "Jobset number $BENCHMARK_JOBSET_NUMBER found in bench.txt"
+        ;;
+	set)
+	echo "Jobset number $JOBSET_NUMBER found in jobset.txt"
+	;;
+	*)
+	echo "Missing benchmarking or jobset number"
+	exit 0
+	;;
+esac
 
 startJob
 
