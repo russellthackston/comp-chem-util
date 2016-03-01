@@ -225,10 +225,11 @@ while [ "$RESP_CODE" = "200" ]; do
 	echo Identified job number as $JOB_NUMBER
 
 	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
-		lscpu > cpu.txt
+		CORES=$(lscpu)
 	else
-		sysctl hw.ncpu | cut -f 2 -d ' ' > cpu.txt
+		CORES=$(sysctl hw.ncpu | cut -f 2 -d ' ')
 	fi
+	echo $CORES > cpu.txt
 
 	# Check the free memory
 	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
@@ -236,8 +237,20 @@ while [ "$RESP_CODE" = "200" ]; do
 	else
 		FREE_MEM=$(top -l 1 -s 0 | grep 'PhysMem' | cut -f 6 -d ' ')
 	fi
+	FREE_MEM=$(echo $FREE_MEM|tr -d [A-Z][a-z])
+	FREE_MEM=$[$FREE_MEM / $CORES]
 	echo $FREE_MEM > freemem.txt
 	sed -i -e "s/memory .*/memory ${FREE_MEM} MB/" input.dat
+
+	echo Setting up to run PSI4 job...
+	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
+		setenv OMP_NUM_THREADS $CORES
+		setenv MKL_NUM_THREADS $CORES
+	else
+		export OMP_NUM_THREADS=$CORES
+                export MKL_NUM_THREADS=$CORES
+	fi
+	echo Set cores to $CORES with $FREE_MEM MB per core
 
 	echo Running PSI4 job...
 	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
