@@ -195,20 +195,23 @@ while [ "$RESP_CODE" = "200" ]; do
 	JOB_NUMBER="$(echo -e "${JOB_NUMBER}" | tr -d '[[:space:]]')"
 	echo Identified job number as $JOB_NUMBER
 
-	lscpu > cpu.txt
-	free -m > mem.txt
+	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
+		lscpu > cpu.txt
+	else
+		sysctl hw.ncpu | cut -f 2 -d ' ' > cpu.txt
+	fi
 
 	# Check the free memory
-	if [ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]; then
-		FREE_MEM=${free -m | grep Mem: | tr -s ' ' | cut -f 4 -d ' '}
+	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
+		FREE_MEM=$(free -m | grep Mem: | tr -s ' ' | cut -f 4 -d ' ')
 	else
-		FREE_MEM=${top -l 1 -s 0 | more | grep 'PhysMem: ' | cut -f 6 -d ' '}
+		FREE_MEM=$(top -l 1 -s 0 | grep 'PhysMem' | cut -f 6 -d ' ')
 	fi
 	echo $FREE_MEM > freemem.txt
 	sed -i -e "s/memory .*/memory ${FREE_MEM} MB/" input.dat
 
 	echo Running PSI4 job...
-	if [ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]; then
+	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
 		/usr/bin/time -v -o "time.out" psi4 > psi4.out 2> psi4.err
 	else
 		/usr/bin/time psi4 > psi4.out 2> psi4.err
