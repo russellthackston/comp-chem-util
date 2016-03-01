@@ -1,12 +1,13 @@
 # Check for command line parameters
-# Usage: myriad.sh -u BASE_URL -m MACHINE_NAME (-b BENCHMARK_JOBSET_NUMBER | -j JOBSET_NUMBER)
+USAGE="USAGE: myriad.sh -u BASE_URL -m MACHINE_NAME (-b BENCHMARK_JOBSET_NUMBER | -j JOBSET_NUMBER) [-h]"
+SHOW_USAGE="false"
 BASE_URL="unknown"
 MACHINE_NAME="unknown"
 BENCHMARK_JOBSET_NUMBER="unknown"
 JOBSET_NUMBER="unknown"
 JOB_TYPE="unknown"
 
-while [[ $# > 1 ]]
+while [[ $# > 0 ]]
 do
 	key="$1"
 	case $key in
@@ -28,9 +29,35 @@ do
 		JOB_TYPE="set"
 		shift
 		;;
+		-h)
+		SHOW_USAGE="true"
+		;;
 	esac
 	shift
 done
+
+if [[ "$SHOW_USAGE" == "true" ]]; then
+	echo $USAGE
+	exit 0
+fi
+
+if [[ "$BASE_URL" == "unknown" ]]; then
+        echo "Missing base url"
+	echo $USAGE
+        exit 1
+fi
+
+if [[ "$MACHINE_NAME" == "unknown" ]]; then
+	echo "Missing machine name"
+	echo $USAGE
+	exit 1
+fi
+
+if [[ "$JOB_TYPE" == "unknown" ]]; then
+        echo "Missing either job set number or benchmark set number"
+	echo $USAGE
+        exit 1
+fi
 
 # Write parameters to their respective files
 if [[ "$BASE_URL" != "unknown" ]]; then
