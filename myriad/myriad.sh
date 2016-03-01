@@ -77,7 +77,7 @@ fi
 SCRATCH=/tmp
 
 function startJob() {
-	sudo rm -Rf $SCRATCH
+	sudo rm -Rf $SCRATCH/*
 
 	# Make a folder for this job
 	DIR_NAME=$(date +%Y%m%d_%H%M%S)
@@ -268,7 +268,7 @@ while [ "$RESP_CODE" = "200" ]; do
 
 	# Clear the scratch space
 	echo clearing the scratch folder
-	sudo rm -Rf $SCRATCH
+	sudo rm -Rf $SCRATCH/*
 
 	popd
 
