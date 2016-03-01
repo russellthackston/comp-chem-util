@@ -238,7 +238,7 @@ while [ "$RESP_CODE" = "200" ]; do
 		FREE_MEM=$(top -l 1 -s 0 | grep 'PhysMem' | cut -f 6 -d ' ')
 	fi
 	FREE_MEM=$(echo $FREE_MEM|tr -d [A-Z][a-z])
-	FREE_MEM=$[$FREE_MEM / $CORES]
+	FREE_MEM=$[FREE_MEM/CORES]
 	echo $FREE_MEM > freemem.txt
 	sed -i -e "s/memory .*/memory ${FREE_MEM} MB/" input.dat
 
