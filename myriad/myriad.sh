@@ -225,7 +225,7 @@ while [ "$RESP_CODE" = "200" ]; do
 	echo Identified job number as $JOB_NUMBER
 
 	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
-		CORES=$(lscpu)
+		CORES=$(lscpu|grep 'CPU(s)'|head -n 1|tr -s ' '|cut -f 2 -d ' ')
 	else
 		CORES=$(sysctl hw.ncpu | cut -f 2 -d ' ')
 	fi
@@ -244,11 +244,11 @@ while [ "$RESP_CODE" = "200" ]; do
 
 	echo Setting up to run PSI4 job...
 	if [[ "$OSTYPE" = "linux" || "$OSTYPE" = "linux-gnu" ]]; then
-		setenv OMP_NUM_THREADS $CORES
-		setenv MKL_NUM_THREADS $CORES
-	else
 		export OMP_NUM_THREADS=$CORES
                 export MKL_NUM_THREADS=$CORES
+	else
+		setenv OMP_NUM_THREADS $CORES
+                setenv MKL_NUM_THREADS $CORES
 	fi
 	echo Set cores to $CORES with $FREE_MEM MB per core
 
