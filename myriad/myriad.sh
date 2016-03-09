@@ -267,7 +267,7 @@ while [ "$RESP_CODE" = "200" ]; do
 
 	echo Uploading output files...
 	UUID=$(uuidgen)
-	echo Using common ID '${UUID}
+	echo Using common ID ${UUID}
 
 	for f in *
 	do
