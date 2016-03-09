@@ -266,10 +266,12 @@ while [ "$RESP_CODE" = "200" ]; do
 	ls -alh $SCRATCH >> disk.txt
 
 	echo Uploading output files...
+	UUID=$(uuidgen)
+	echo Using common ID '${UUID}
 
 	for f in *
 	do
-		OUTPUT_REQUEST="${BASE_URL}"'/output/'"${JOB_NUMBER}"'?machineID='"${MAC_ID}"'&filename='"${f}"
+		OUTPUT_REQUEST="${BASE_URL}"'/output/'"${JOB_NUMBER}"'?machineID='"${MAC_ID}"'&filename='"${f}"'&uuid='"${UUID}"
 		if [ -s $f ]; then
 			echo Uploading $f
 			echo Accessing web service: $OUTPUT_REQUEST
