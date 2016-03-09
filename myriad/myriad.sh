@@ -1,11 +1,13 @@
 # Check for command line parameters
-USAGE="USAGE: myriad.sh -u BASE_URL -m MACHINE_NAME (-b BENCHMARK_JOBSET_NUMBER | -j JOBSET_NUMBER) [-h]"
+USAGE="USAGE: myriad.sh -u BASE_URL -m MACHINE_NAME (-b BENCHMARK_JOBSET_NUMBER | -j JOBSET_NUMBER) [-h] [-l (directory)]"
 SHOW_USAGE="false"
 BASE_URL="unknown"
 MACHINE_NAME="unknown"
 BENCHMARK_JOBSET_NUMBER="unknown"
 JOBSET_NUMBER="unknown"
 JOB_TYPE="unknown"
+UPLOAD_FILES="unknown"
+UPLOAD_FROM="unknown"
 
 while [[ $# > 0 ]]
 do
@@ -32,12 +34,27 @@ do
 		-h)
 		SHOW_USAGE="true"
 		;;
+		-l)
+		UPLOAD_FILES="true"
+		UPLOAD_FROM=$2
+		shift
+		;;
 	esac
 	shift
 done
 
 if [[ "$SHOW_USAGE" == "true" ]]; then
 	echo $USAGE
+	exit 0
+fi
+
+if [[ "$UPLOAD_FILES" == "true" ]]; then
+	if [[ "$UPLOAD_FROM" == "unknown" ]]; then
+		echo "Missing directory name to upload from"
+		echo $USAGE
+		exit 1
+	fi
+	uploadFiles($UPLOAD_FROM);
 	exit 0
 fi
 
@@ -75,6 +92,28 @@ fi
 
 # http://myriad.elasticbeanstalk.com/api
 SCRATCH=/tmp
+
+function uploadFiles($ff) {
+	pushd $ff
+
+	echo Uploading output files...
+        UUID=$(uuidgen)
+        echo Using common ID ${UUID}
+
+	for f in *
+        do
+                OUTPUT_REQUEST="${BASE_URL}"'/output/'"${JOB_NUMBER}"'?machineID='"${MAC_ID}"'&filename='"${f}"'&uuid='"${UUID}"
+                if [ -s $f ]; then
+                        echo Uploading $f
+                        echo Accessing web service: $OUTPUT_REQUEST
+                        curl --request POST ${OUTPUT_REQUEST} -H "Content-Type: text/plain" --data-binary "@${f}"
+                else
+                        echo Skipping upload of empty file $f
+                fi
+        done
+
+	popd
+}
 
 function startJob() {
 	rm -Rf $SCRATCH/* 2> /dev/null
@@ -265,21 +304,7 @@ while [ "$RESP_CODE" = "200" ]; do
 	df -h > disk.txt
 	ls -alh $SCRATCH >> disk.txt
 
-	echo Uploading output files...
-	UUID=$(uuidgen)
-	echo Using common ID ${UUID}
-
-	for f in *
-	do
-		OUTPUT_REQUEST="${BASE_URL}"'/output/'"${JOB_NUMBER}"'?machineID='"${MAC_ID}"'&filename='"${f}"'&uuid='"${UUID}"
-		if [ -s $f ]; then
-			echo Uploading $f
-			echo Accessing web service: $OUTPUT_REQUEST
-			curl --request POST ${OUTPUT_REQUEST} -H "Content-Type: text/plain" --data-binary "@${f}"
-		else
-			echo Skipping upload of empty file $f
-		fi
-	done
+	uploadFiles(".");
 
 	# Clear the scratch space
 	echo clearing the scratch folder
