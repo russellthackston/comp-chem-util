@@ -41,10 +41,9 @@ function startJob() {
         RESP_CODE="$(echo -e "${RESP_CODE}" | tr -d '[[:space:]]')"
         echo Identified response code as $RESP_CODE
 
-	popd
-
         if [ "$RESP_CODE" != "200" ]; then
                 echo No more jobs found in job set
+		popd
                 rm -Rf $DIR_NAME
         fi
 }
@@ -204,6 +203,8 @@ while [ "$RESP_CODE" = "200" ]; do
 	# Clear the scratch space
 	echo clearing the scratch folder
 	rm -Rf $SCRATCH/* 2> /dev/null
+
+	popd
 
 	startJob
 
