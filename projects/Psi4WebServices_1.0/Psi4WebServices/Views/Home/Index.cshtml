@@ -1,14 +1,29 @@
 ﻿<div class="jumbotron">
-    <h1>Psi4/Myriad Web Service</h1>
+    <h1>Psi4/Myriad</h1>
+    <p>Running psi4 jobs <em>anywhere</em> and <em>everywhere</em>!</p>
 </div>
 <div class="row">
     <div class="col-md-4">
-        We currently have 
-        @{ 
-            var db = new JobsDataAccess();
-            var count = db.Get().Count;
-            @count;
-        } 
-        jobs in the database.
+        A few statistics:
+        <ul>
+            <li>
+                We currently have <strong>
+                @{
+                    var jdb = new JobsDataAccess();
+                    int count = jdb.Get().Count;
+                    @count;
+                }
+                </strong> jobs in our database.
+            </li>
+            <li>
+                A total of <strong>
+                @{
+                    var odb = new OutputDataAccess();
+                    long lcount = odb.GetCount();
+                    @lcount;
+                }
+                </strong> job outputs have been recorded in our database.
+            </li>
+        </ul>
     </div>
 </div>
