@@ -5,6 +5,7 @@ using System.Web;
 
 using System.Text;
 using MySql.Data.MySqlClient;
+using System.Web.Configuration;
 
 namespace Psi4WebServices.Controllers.Data
 {
@@ -18,18 +19,25 @@ namespace Psi4WebServices.Controllers.Data
             {
                 StringBuilder connectionString = new StringBuilder();
                 connectionString.Append("server=");
-                connectionString.Append(SERVER_NAME);
+                connectionString.Append(WebConfigurationManager.AppSettings["SERVER_NAME"]);
                 connectionString.Append(";uid=");
-                connectionString.Append(USER_NAME);
+                connectionString.Append(WebConfigurationManager.AppSettings["USER_NAME"]);
                 connectionString.Append(";pwd=");
-                connectionString.Append(PASSWORD);
+                connectionString.Append(WebConfigurationManager.AppSettings["PASSWORD"]);
                 connectionString.Append(";database=");
-                connectionString.Append(SCHEMA_NAME);
+                connectionString.Append(WebConfigurationManager.AppSettings["SCHEMA_NAME"]);
                 connectionString.Append(";");
 
                 conn = new MySql.Data.MySqlClient.MySqlConnection();
                 conn.ConnectionString = connectionString.ToString();
-                conn.Open();
+                try {
+                    conn.Open();
+                }
+                catch (Exception ex)
+                {
+                    string s = ex.Message;
+                }
+                
             }
         }
 
