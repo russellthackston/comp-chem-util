@@ -204,7 +204,7 @@ def main(startIndex,endIndex):
                 writerForce = csv.writer(fForce)
 
 	rowCount = 0
-	i=(len(digits)**startIndex)-1
+	i=startIndex
 	while i < endIndex:
 		e=entry(i, digits)
 		if args.verbose and not args.silent:
@@ -300,7 +300,8 @@ def main(startIndex,endIndex):
 	if args.verbose and not args.silent:
 		print '# Done creating cartesion product'
 
-
+def magic(reps, node, nodes):
+	return int((2*reps*node)**((reps**2)/(21*math.sqrt(nodes))))
 
 
 
@@ -310,30 +311,43 @@ def main(startIndex,endIndex):
 # If parallelization is enabled, calculate the start and end based on the node number
 #   and number of nodes
 if args.parallel:
+	if args.verbose and not args.silent:
+		print 'Calculating parallelization values'
 	p = args.parallel.split(":");
 	if len(p) != 2:
 		print "Error: Parameter not formatted properly: " + args.parallel
 		print "Is your start/end node list properly formatted as '(start):(end)'?"
 		exit(1)
-	if p[0] == 1:
+	if int(p[0]) == 1:
 		# If it's the first node in the node set, then the start index is 0
 		sIndex = 0
+		if args.verbose and not args.silent:
+			print 'First node. Setting sIndex to 0'
 	else:
-		sIndex = (2*args.reps*int(p[0]))**((args.reps**2)/(21*math.sqrt(int(p[1]))))
-	if p[0] == p[1]:
+		sIndex = magic(args.reps, int(p[0]), int(p[1]))
+		if args.verbose and not args.silent:
+			print 'sIndex set to ' + str(sIndex)
+	if int(p[0]) == int(p[1]):
 		# if it's the last node in the node set, then the end is the last index
 		eIndex = args.digits**args.reps
+		if args.verbose and not args.silent:
+			print 'Last node. eIndex set to ' + str(eIndex)
 	else:
-		eIndex = ((2*args.reps*int(p[0]+1))**((args.reps**2)/(21*math.sqrt(int(p[1]))))) - 1
+		eIndex = magic(args.reps, int(p[0])+1, int(p[1]))
+		if args.verbose and not args.silent:
+			print 'eIndex set to ' + str(eIndex)
 
-if args.start:
-	sIndex=args.start
+	if sIndex == eIndex:
+		eIndex = eIndex + 1
 else:
-	sIndex=0
-if args.end:
-	eIndex=args.end
-else:
-	eIndex=args.digits**args.reps
+	if args.start:
+		sIndex=args.start
+	else:
+		sIndex=0
+	if args.end:
+		eIndex=args.end
+	else:
+		eIndex=args.digits**args.reps
 
 if args.debug:
 	print str(args)
