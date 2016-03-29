@@ -301,7 +301,7 @@ def main(startIndex,endIndex):
 		print '# Done creating cartesion product'
 
 def magic(reps, node, nodes):
-	return int((2*reps*node)**((reps**2)/(21*math.sqrt(nodes))))
+        return ((2*reps*node)**long((reps**2)/(21*math.sqrt(nodes))))
 
 
 
