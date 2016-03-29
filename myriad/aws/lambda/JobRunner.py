@@ -23,6 +23,12 @@ def get(event, context):
     if jobsetid == '':
         raise Exception('400: Missing job set ID')
 
+    # Get machineID
+    if 'machineID' in event:
+        machineID = event['machineID']
+    else:
+        machineID = ""
+
     try:
         conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
     except:
@@ -33,6 +39,7 @@ def get(event, context):
 
     found = 0
     result = Job()
+    jobGUID = ""
     
     try:
         with conn.cursor() as cur:
@@ -45,11 +52,33 @@ def get(event, context):
                 result.inputFile = row[2]
                 result.created = row[3]
                 #print(row)
+                
+            if machineID != "":
+                logger.info("Adding record to Executions table")
+                with conn.cursor() as cur:
+                    sql = "INSERT INTO Executions (JobId, JobStarted, MachineID, JobGUID) VALUES (%s, NOW(), %s, UUID())"
+                    cur.execute(sql, (str(result.id), str(machineID)))
+                    executionID = cur.lastrowid
+                    conn.commit()
+                    logger.info("Executions record added")
+
+                    # Get the Job GUID
+                    jobGUID = ""
+                    sql = "SELECT JobGUID FROM Executions WHERE ExecutionID = %s"
+                    cur.execute(sql, executionID)
+                    for row in cur:
+                        jobGUID = row[0]
+                    logger.info("JobGUID retrieved as " + str(jobGUID))
+
     finally:
         conn.close()
 
     #return { 'ID' : result.id, 'Name' : result.name, 'InputFile' : result.inputFile, 'Created' : result.created }
     if found == 1:
-        return '# JobID: ' + str(result.id) + '\n' + result.inputFile
+        # Include the Job GUID, if we have one
+        if jobGUID == "":
+            return '# JobID: ' + str(result.id) + '\n' + result.inputFile
+        else:
+            return '# JobID: ' + str(result.id) + '\n# JobGUID: ' + str(jobGUID) + '\n' + result.inputFile
     else:
         raise Exception('404: No jobs found')

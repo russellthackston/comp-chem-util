@@ -81,6 +81,7 @@ def post(event, context):
 
     try:
         with conn.cursor() as cur:
+            logger.info("Looking for machine...")
             sql = "SELECT MachineID, MAC, Created, Name FROM Machines WHERE MAC = %s AND Name = %s"
             cur.execute(sql, (mac, name))
             for row in cur:
@@ -89,9 +90,11 @@ def post(event, context):
                 result.mac = row[1]
                 result.created = row[2].isoformat()
                 result.name = row[3]
+                logger.info("Found machine with ID " + str(result.id))
             
             # If the MAC/Name combination is not found in the database, add it
             if found == 0:
+                logger.info("Machine not found. Creating...")
                 sql = "INSERT INTO Machines (MAC, Created, Name) VALUES (%s, now(), %s)"
                 cur.execute(sql, (mac, name))
                 conn.commit()

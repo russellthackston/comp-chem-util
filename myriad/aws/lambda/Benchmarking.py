@@ -67,11 +67,19 @@ def get(event, context):
                 if found == 1:
                     logger.info("Adding record to Executions table")
                     with conn.cursor() as cur:
-                        sql = "INSERT INTO Executions (JobId, JobStarted, MachineID) VALUES (%s, NOW(), %s)"
+                        sql = "INSERT INTO Executions (JobId, JobStarted, MachineID, JobGUID) VALUES (%s, NOW(), %s, UUID())"
                         cur.execute(sql, (str(result.id), str(machineID)))
                         executionID = cur.lastrowid
                         conn.commit()
                         logger.info("Executions record added")
+
+                        # Get the Job GUID
+                        jobGUID = ""
+                        sql = "SELECT JobGUID FROM Executions WHERE ExecutionID = %s"
+                        cur.execute(sql, str(executionID))
+                        for row in cur:
+                            jobGUID = row[0]
+                        logger.info("JobGUID retrieved as " + str(jobGUID))
 
     finally:
         conn.close()
@@ -81,6 +89,6 @@ def get(event, context):
         raise Exception('400: Machine ID not found')
     else:
         if found == 1:
-            return '# JobID: ' + str(result.id) + '\n# ExecutionID: ' + str(executionID) + '\n' + result.inputFile
+            return '# JobID: ' + str(result.id) + '\n# JobGUID: ' + str(jobGUID) + '\n' + result.inputFile
         else:
             raise Exception('404: No jobs found')
