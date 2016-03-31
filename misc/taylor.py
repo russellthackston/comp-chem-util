@@ -226,13 +226,13 @@ def main(startIndex,endIndex):
 				writerForce.writerow(e)
 			i+=1
 		else:
-			# Check if numbers in array total to 4 or greater and skip to next block
-			if sum(e) >= 4:
+			# Check if numbers in array total to (args.digits - 1) or greater and skip to next block
+			if sum(e) >= (args.digits - 1):
 				tmp=0
 				left=args.reps-1
 				for j in range(0, len(e)-1):
 					tmp+=e[j]
-					if tmp >= 4:
+					if tmp >= (args.digits - 1):
 						left=j
 						break
 				right=0
@@ -247,7 +247,7 @@ def main(startIndex,endIndex):
 				i+=(k-l)
 			else:
 				i+=1
-			if sum(e) <= 4:
+			if sum(e) <= (args.digits - 1):
 				if args.modcheck != None:
 					if args.verbose and not args.silent:
 						print "# Performing mod check"
@@ -282,7 +282,7 @@ def main(startIndex,endIndex):
 		                                writerForce.writerow(e)
 			else:
 				if args.verbose and not args.silent:
-					print '# Skipped ' + str(e) + ' due to array total greater than 4'
+					print '# Skipped ' + str(e) + ' due to array total greater than (args.digits - 1)'
 
 	if args.indexes or writeAll:
 		fIndexes.close()
