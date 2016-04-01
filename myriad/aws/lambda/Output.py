@@ -23,13 +23,17 @@ def get(event, context):
     if 'start' not in event:
         start = 0
     else:
-        start = int(event['start'])
+        start = event['start']
+        if start == "":
+            start = 0
 
     # Get the page size
     if 'pagesize' not in event:
         pagesize = 10
     else:
-        pagesize = int(event['pagesize'])
+        pagesize = event['pagesize']
+        if pagesize = "":
+            pagesize = 10
 
     try:
         conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
@@ -45,14 +49,17 @@ def get(event, context):
     try:
         with conn.cursor() as cur:
             sql = "SELECT JobResultsID, JobID, OutputFile, ResultsCollected, MachineID, Filename, JobGUID FROM JobResults ORDER BY JobResultsID LIMIT %s, %s"
-            cur.execute(sql, (start, pagesize))
+            cur.execute(sql, (int(start), int(pagesize)))
             for row in cur:
                 found = 1
                 j = JobResult()
                 j.id = row[0]
                 j.jobID = row[1]
                 j.outputFile = row[2]
-                j.collected = row[3].isoformat()
+                if row[3] is not None:
+                    j.collected = row[3].isoformat()
+                else:
+                    j.collected = ""
                 j.machineID = row[4]
                 j.filename = row[5]
                 j.jobGUID = row[6]
