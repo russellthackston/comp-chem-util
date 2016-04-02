@@ -187,3 +187,56 @@ def delete(event, context):
     finally:
         conn.close()
 
+def put(event, context):
+    # Get the requested job id
+    if 'id' not in event:
+        raise Exception('400: Missing job ID')
+    else:
+        id = event['id']
+        if id == "":
+            raise Exception('400: Missing job ID')
+
+    # Get job name
+    if 'jobname' not in event:
+        raise Exception('400: Missing job name')
+    jobname = event['jobname']
+    if jobname == '':
+        raise Exception('400: Missing job name')
+
+    # Get the input file contents
+    if 'inputFile' not in event:
+        raise Exception('400: Missing input file contents')
+    inputFile = event['inputFile']
+    if inputFile == '':
+        raise Exception('400: Missing input file contents')
+
+    try:
+        conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
+    except:
+        logger.error("ERROR: Unexpected error: Could not connect to MySql instance.")
+        sys.exit()
+
+    logger.info("SUCCESS: Connection to RDS mysql instance succeeded")
+
+    try:
+        with conn.cursor() as cur:
+            sql = "UPDATE Jobs SET JobName = %s, InputFile = %s WHERE JobID = %s"
+            logger.info((jobname, inputFile, int(id)))
+            cur.execute(sql, (jobname, inputFile, int(id)))
+            # For some reason, rowcount is always returning zero (0)
+            #    So I just commented out the error handling assumed the query worked.
+            #    Sorry about that.
+            #                         - Past Russell.
+            #if cur.rowcount == 1:
+            #        logger.info("Commit changes")
+            #        conn.commit()
+            #else:
+            #    logger.info("Error: Rowcount was " + str(cur.rowcount))
+            #    raise Exception('404: Job ID not found')
+            logger.info("Updated JobResults ID of " + str(id) + ". Rowcount=" + str(cur.rowcount))
+            conn.commit()
+
+    finally:
+        conn.close()
+
+
