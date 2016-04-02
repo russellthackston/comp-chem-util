@@ -42,7 +42,7 @@ function uploadFiles() {
                 if [ -s $f ]; then
                         echo Uploading $f
                         echo Accessing web service: $OUTPUT_REQUEST
-                        curl --request POST ${OUTPUT_REQUEST} -H "Content-Type: text/plain" --data-binary "@${f}"
+                        curl --request POST ${OUTPUT_REQUEST} -H "Content-Type: text/plain" --data-binary "@${f}" > /dev/null 2>&1
                 else
                         echo Skipping upload of empty file $f
                 fi
