@@ -39,6 +39,7 @@ function uploadFiles() {
 		# Substitute values for variables in URL
 		OUTPUT_REQUEST="${Output_POST/\{jobGUID\}/$jobGUID}"
 		OUTPUT_REQUEST="${OUTPUT_REQUEST/\{filename\}/$f}"
+		OUTPUT_REQUEST="$(sed -e 's/[[:space:]]*$//' <<<${OUTPUT_REQUEST})"
                 if [ -s $f ]; then
                         echo Uploading $f
                         echo Accessing web service: $OUTPUT_REQUEST
@@ -69,6 +70,7 @@ function startJob() {
                 INPUT_REQUEST="${JobRunner_GET/\{id\}/$JOBSET_NUMBER}"
                 INPUT_REQUEST="${INPUT_REQUEST/\{machineID\}/$MAC_ID}"
         fi
+	INPUT_REQUEST="$(sed -e 's/[[:space:]]*$//' <<<${INPUT_REQUEST})"
 
         echo Accessing web service: $INPUT_REQUEST
         curl --request GET ${INPUT_REQUEST} -w "\n\n# Response Code: %{http_code}\n" -H "Content-Type: text/plain" -d "" > input.dat
@@ -175,6 +177,7 @@ echo MAC address determined to be $MAC_ADDRESS
 # Build the URL to request a new/existing machine ID
 POST_REQUEST="${Machines_POST/\{mac\}/$MAC_ADDRESS}"
 POST_REQUEST="${POST_REQUEST/\{name\}/$MACHINE_NAME}"
+POST_REQUEST="$(sed -e 's/[[:space:]]*$//' <<<${POST_REQUEST})"
 echo Accessing web service: $POST_REQUEST
 
 # Call the web service and store the response value
