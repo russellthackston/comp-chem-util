@@ -54,7 +54,7 @@ def get(event, context):
 
             if machineCount > 0:
                 with conn.cursor() as cur:
-                    sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.InputFile, Jobs.Created FROM Jobs WHERE JobID IN (SELECT JobID FROM JobSetJobs, JobSets WHERE JobSetJobs.JobSetID = JobSets.JobSetID AND JobSets.JobSetID = %s ) AND JobID NOT IN (SELECT JobID FROM JobResults WHERE MachineID = %s) LIMIT 1"
+                    sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.InputFile, Jobs.Created FROM Jobs, Executions  WHERE Jobs.JobID = Executions.JobID AND Jobs.JobID IN (SELECT JobSetJobs.JobID FROM JobSetJobs, JobSets WHERE JobSetJobs.JobSetID = JobSets.JobSetID AND JobSets.JobSetID = %s ) AND Jobs.JobID NOT IN (SELECT JobResults.JobID FROM JobResults WHERE MachineID = %s) GROUP BY Executions.JobID ORDER BY COUNT(Executions.JobID) ASC, Executions.JobStarted ASC LIMIT 1;"
                     cur.execute(sql, (str(jobsetid), str(machineID)))
                     for row in cur:
                         found = 1
