@@ -39,7 +39,10 @@ def get(event, context):
                 m = Machine()
                 m.id = row[0]
                 m.mac = row[1]
-                m.created = row[2].isoformat()
+                if row[2] is not None:
+                    m.created = row[2].isoformat()
+                else:
+                    m.created = ""
                 m.name = row[3]
                 result.append(m)
 
@@ -88,7 +91,10 @@ def post(event, context):
                 found = 1
                 result.id = row[0]
                 result.mac = row[1]
-                result.created = row[2].isoformat()
+                if row[2] is not None:
+                    result.created = row[2].isoformat()
+                else:
+                    result.created = ""
                 result.name = row[3]
                 logger.info("Found machine with ID " + str(result.id))
             

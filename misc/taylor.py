@@ -4,19 +4,22 @@ import argparse
 import csv
 import itertools
 
-parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example #1: "python taylor.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4]. Example #2: "python taylor.py 5 24 -m 2:[17-23]" will print the product of 24 repetitions of [0,1,2,3,4], skipping rows that fail a mod 2 check of the sum of digits 17-23.')
+parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example: "python taylor.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4].')
 parser.add_argument("digits", help="The number of digits in the array [0..digits]", type=int)
 parser.add_argument("reps", help="The number of repetitions of the set", type=int)
-parser.add_argument("-s", "--start", help="Only print lines with indexes greater than or equal to (digits^start)", type=int)
-parser.add_argument("-e", "--end", help="Only print lines with indexes less than or equal to (digits^end)", type=int)
-parser.add_argument("-m", "--modcheck", help="Enables a mod check of one of more subsets of digits (first digit is index 1)", type=str)
-parser.add_argument("-q", "--equivalence", help="Enables an equivalence check of one or more subsets of digits (first digit is index 1)", type=str)
+parser.add_argument("-s", "--start", help="Only print lines with indexes greater than or equal to 'start'", type=int)
+parser.add_argument("-e", "--end", help="Only print lines with indexes less than or equal to 'end'", type=int)
+parser.add_argument("-m", "--modcheck", help="Enables a mod check of one of more subsets of digits (first digit is index 1). Expects this value to be in the format '-m d:[s-e]' where 'd' is the mod check value, 's' is the start index, and 'e' is the end index.", type=str)
+parser.add_argument("-q", "--equivalence", help="Enables an equivalence check of one or more subsets of digits (first digit is index 1). Expects this value to be in the format '-m q:[s-e]' where 'q' is the equivilence check value, 's' is the start index, and 'e' is the end index.", type=str)
+parser.add_argument("-p", "--parallel", help="Calculates the --start and --end values based on the provided node number and number of nodes. Expected format is '--p (node number):(number of nodes)'", type=str)
 parser.add_argument("-f", "--forceConstants", help="Write force constant values to force.txt", action="store_true")
 parser.add_argument("-d", "--displacements", help="Write displacement values to disp.txt", action="store_true")
 parser.add_argument("-i", "--indexes", help="Write row indexes to indexes.txt", action="store_true")
 parser.add_argument("-l", "--silent", help="Suppress all output to stdout", action="store_true")
 parser.add_argument("-u", "--unfiltered", help="Skip the filtering step and produce a complete cartesian product", action="store_true")
 parser.add_argument("-v", "--verbose", help="Produce verbose output", action="store_true")
+parser.add_argument("--debug", help="Sets up the job but does not run it. Prints debug info instead", action="store_true")
+parser.add_argument("--summary", help="Only print summary information (i.e. number of rows in output files)", action="store_true")
 parser.add_argument('--version', action='version', version='Taylor Series generation script v1.0. Latest version and full documentation available at https://github.com/russellthackston/comp-chem-util in the "misc" folder. Report any bugs or issues at the above web address.')
 args=parser.parse_args()
 
@@ -159,6 +162,17 @@ def displacements(e):
 	return result
 
 def main(startIndex,endIndex):
+	# Set up summary variables
+	rowsIndexes = 0
+	rowsForce = 0
+	rowsDisp = 0
+
+	# Set up summary only values
+	if args.summary:
+		args.indexes = False
+		args.displacements = False
+		args.forceConstants = False
+
 	# Build the array of digits
 	digits=[]
 	for i in range(0,args.digits):
@@ -179,7 +193,7 @@ def main(startIndex,endIndex):
 			print "# Parsed mod check " + str(args.equivalence) + " into " + str(eqchecks)
 
 	# Open the output file, if requested
-	writeAll=(not args.indexes and not args.displacements and not args.forceConstants)
+	writeAll=(not args.indexes and not args.displacements and not args.forceConstants and not args.summary)
 	if args.indexes or writeAll:
 		fIndexes = open('indexes.txt', 'w')
 	if args.displacements or writeAll:
@@ -190,31 +204,35 @@ def main(startIndex,endIndex):
                 writerForce = csv.writer(fForce)
 
 	rowCount = 0
-	i=(len(digits)**startIndex)-1
-	while i < len(digits)**endIndex:
+	i=startIndex
+	while i < endIndex:
 		e=entry(i, digits)
 		if args.verbose and not args.silent:
 			print '# Processing index ' + str(i)
 		old_i=i
 		if args.unfiltered:
 			rowCount+=1
+			if args.summary:
+				rowsIndexes+=1
+				rowsForce+=1
+				rowsDisp+=len(displacements(e))
 			if args.indexes or writeAll:
 				fIndexes.write(str(i)+"\n")
 			if args.displacements or writeAll:
 				lst=displacements(e)
 				for l in lst:
-                                	writerDisp.writerow(l)
+					writerDisp.writerow(l)
 			if args.forceConstants or writeAll:
-                                writerForce.writerow(e)
+				writerForce.writerow(e)
 			i+=1
 		else:
-			# Check if numbers in array total to 4 or greater and skip to next block
-			if sum(e) >= 4:
+			# Check if numbers in array total to (args.digits - 1) or greater and skip to next block
+			if sum(e) >= (args.digits - 1):
 				tmp=0
 				left=args.reps-1
 				for j in range(0, len(e)-1):
 					tmp+=e[j]
-					if tmp >= 4:
+					if tmp >= (args.digits - 1):
 						left=j
 						break
 				right=0
@@ -229,7 +247,7 @@ def main(startIndex,endIndex):
 				i+=(k-l)
 			else:
 				i+=1
-			if sum(e) <= 4:
+			if sum(e) <= (args.digits - 1):
 				if args.modcheck != None:
 					if args.verbose and not args.silent:
 						print "# Performing mod check"
@@ -250,6 +268,10 @@ def main(startIndex,endIndex):
 							print '# Failed equivalence check'
 					rowCount+=1
 				else:
+					if args.summary:
+                                		rowsIndexes+=1
+                                		rowsForce+=1
+                                		rowsDisp+=len(displacements(e))
 					if args.indexes or writeAll:
 		                                fIndexes.write(str(i)+"\n")
                 		        if args.displacements or writeAll:
@@ -260,7 +282,7 @@ def main(startIndex,endIndex):
 		                                writerForce.writerow(e)
 			else:
 				if args.verbose and not args.silent:
-					print '# Skipped ' + str(e) + ' due to array total greater than 4'
+					print '# Skipped ' + str(e) + ' due to array total greater than (args.digits - 1)'
 
 	if args.indexes or writeAll:
 		fIndexes.close()
@@ -269,17 +291,69 @@ def main(startIndex,endIndex):
         if args.forceConstants or writeAll:
                 fForce.close()
 
+	if args.summary:
+		print "Job Summary"
+		print "  Indexes: " + str(rowsIndexes)
+		print "  Force Constants: " + str(rowsForce)
+		print "  Displacements: " + str(rowsDisp)
+
 	if args.verbose and not args.silent:
 		print '# Done creating cartesion product'
 
+def magic(reps, node, nodes):
+        return ((2*reps*node)**long((reps**2)/(21*math.sqrt(nodes))))
+
+
+
+# ******* Begin main program **********
+
 # Set up indexes
-if args.start:
-	sIndex=args.start
+# If parallelization is enabled, calculate the start and end based on the node number
+#   and number of nodes
+if args.parallel:
+	if args.verbose and not args.silent:
+		print 'Calculating parallelization values'
+	p = args.parallel.split(":");
+	if len(p) != 2:
+		print "Error: Parameter not formatted properly: " + args.parallel
+		print "Is your start/end node list properly formatted as '(start):(end)'?"
+		exit(1)
+	if int(p[0]) == 1:
+		# If it's the first node in the node set, then the start index is 0
+		sIndex = 0
+		if args.verbose and not args.silent:
+			print 'First node. Setting sIndex to 0'
+	else:
+		sIndex = magic(args.reps, int(p[0]), int(p[1]))
+		if args.verbose and not args.silent:
+			print 'sIndex set to ' + str(sIndex)
+	if int(p[0]) == int(p[1]):
+		# if it's the last node in the node set, then the end is the last index
+		eIndex = args.digits**args.reps
+		if args.verbose and not args.silent:
+			print 'Last node. eIndex set to ' + str(eIndex)
+	else:
+		eIndex = magic(args.reps, int(p[0])+1, int(p[1]))
+		if args.verbose and not args.silent:
+			print 'eIndex set to ' + str(eIndex)
+
+	if sIndex == eIndex:
+		eIndex = eIndex + 1
 else:
-	sIndex=0
-if args.end:
-	eIndex=args.end
-else:
-	eIndex=args.reps
+	if args.start:
+		sIndex=args.start
+	else:
+		sIndex=0
+	if args.end:
+		eIndex=args.end
+	else:
+		eIndex=args.digits**args.reps
+
+if args.debug:
+	print str(args)
+	print "sIndex="+str(sIndex)
+	print "eIndex="+str(eIndex)
+	exit(0)
+
 
 main(sIndex, eIndex)
