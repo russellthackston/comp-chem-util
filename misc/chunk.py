@@ -17,7 +17,7 @@ def size(base, reps):
 		return 1
 	return (size(base,reps-1))*((base+(reps-1))/float(reps))
 
-def walk(base, reps, target, accum, stack):
+def walk(base, reps, target, accum, stack, basebase, repsreps):
         if reps == 1:
                 accum += base
 		return accum
@@ -26,23 +26,35 @@ def walk(base, reps, target, accum, stack):
 		return accum
         for i in range(0, base):
 		stack.append(i)
-                accum = walk(base-i, reps-1, target, accum, stack)
+                accum = walk(base-i, reps-1, target, accum, stack, basebase, repsreps)
 		if accum > target:
 			stack.append(base-i-1)
-			print "*** " + str(stack) + ": " + str(accum)
+			#stacklength = len(stack)
+			#while len(stack) < repsreps:
+			#	stack.append(0)
+			offset = repsreps - 1
+			index = 0
+			for j in stack:
+				index += j * (basebase**offset)
+				offset -= 1
+			print str(index)
 			accum = 0
+			#while len(stack) > stacklength:
+			#	stack.pop()
 			stack.pop()
 		stack.pop()
         return accum
 
 cores=sys.argv[1]
+if len(sys.argv) > 4:
+	cores=sys.argv[4]
 jobsize=float(calc(int(sys.argv[2]),int(sys.argv[3])))
 workunit=jobsize/int(cores)
 print "Cores=" + str(cores)
 print "Total job size=" + str(jobsize)
 print "Target work unit=" + str(workunit)
-
-walk(int(sys.argv[2]),int(sys.argv[3]), workunit, 0, [])
+print "0"
+walk(int(sys.argv[2]),int(sys.argv[3]), workunit, 0, [],int(sys.argv[2]),int(sys.argv[3]))
 
 
 
