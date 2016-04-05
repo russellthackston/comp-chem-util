@@ -1,5 +1,8 @@
 import sys
 
+# This function simply walks a branch of the tree and recursively 
+#    adds up all the node sizes found in the branch.
+# The computational complexity of the function is O(n + 3).
 def calc(base, reps):
 	if reps == 1:
                 return base
@@ -10,6 +13,12 @@ def calc(base, reps):
 		total += calc(base-i, reps-1)
 	return total
 
+# While this is the textbook formula for computing the size of
+#   particular branch of the tree, the computational complexity
+#   of the calculation makes it less desirable than simply 
+#   walking the tree (i.e. "calc" function).
+# The complexity varies by processor, but is O(2n^2+3) in the 
+#   worst case.
 def size(base, reps):
 	if reps == 1:
 		return base
