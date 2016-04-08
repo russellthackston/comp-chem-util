@@ -228,23 +228,26 @@ def main(startIndex,endIndex):
 		else:
 			# Check if numbers in array total to (args.digits - 1) or greater and skip to next block
 			if sum(e) >= (args.digits - 1):
-				tmp=0
-				left=args.reps-1
-				for j in range(0, len(e)-1):
-					tmp+=e[j]
-					if tmp >= (args.digits - 1):
-						left=j
+				done = False
+				# copy the row
+				etemp = e[:]
+				# zero the right-most non-zero value
+				for idx in range(args.reps-1, -1, -1):
+					if etemp[idx] > 0:
+						etemp[idx] = 0
+						if idx > 0:
+							etemp[idx-1] = etemp[idx-1] + 1
+						else:
+							done = True
 						break
-				right=0
-				for j in range(len(e)-1, -1, -1):
-					if e[j] != 0:
-						right=j
-						break
-				j=max(min(left,right),0)
-				index=(len(e)-j)
-				k=len(digits)**index
-				l=(i+k)%(len(digits)**index)
-				i+=(k-l)
+				# translate new array into an index
+				if done:
+					i = endIndex
+				else:
+					i = 0
+					for idx in range(0, args.reps):
+						p = args.reps - idx - 1
+						i += etemp[idx] * (args.digits**p)
 			else:
 				i+=1
 			if sum(e) <= (args.digits - 1):
