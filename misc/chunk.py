@@ -65,6 +65,7 @@ workunit=jobsize/int(cores)
 print "Cores=" + str(cores)
 print "Total job size=" + str(jobsize)
 print "Target work unit=" + str(workunit)
+print "Starting indexes:"
 print "0"
 walk(int(sys.argv[2]),int(sys.argv[3]), workunit, 0, [],int(sys.argv[2]),int(sys.argv[3]))
 
