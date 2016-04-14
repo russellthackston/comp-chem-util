@@ -3,20 +3,20 @@ import sys
 # This function simply walks a branch of the tree and recursively 
 #    adds up all the node sizes found in the branch.
 # The computational complexity of the function is O(n + 3).
-def calc(base, reps):
+def branch(base, reps):
 	if reps == 1:
                 return base
         if base == 1:
                 return 1
 	total=0
 	for i in range(0, base):
-		total += calc(base-i, reps-1)
+		total += branch(base-i, reps-1)
 	return total
 
-# While this is the textbook formula for computing the size of
+# While this is the "textbook formula" for computing the size of
 #   particular branch of the tree, the computational complexity
 #   of the calculation makes it less desirable than simply 
-#   walking the tree (i.e. "calc" function).
+#   walking the tree (i.e. "branch" function).
 # The complexity varies by processor, but is O(2n^2+3) in the 
 #   worst case.
 def size(base, reps):
@@ -26,6 +26,8 @@ def size(base, reps):
 		return 1
 	return (size(base,reps-1))*((base+(reps-1))/float(reps))
 
+# Walks the entire tree and partitions the tree's nodes into
+#   similarly sized chunks based on the the desired number of nodes.
 def walk(base, reps, target, accum, stack, basebase, repsreps):
         if reps == 1:
                 accum += base
@@ -54,10 +56,11 @@ def walk(base, reps, target, accum, stack, basebase, repsreps):
 		stack.pop()
         return accum
 
+# Get the command line parameters
 cores=sys.argv[1]
 if len(sys.argv) > 4:
 	cores=sys.argv[4]
-jobsize=float(calc(int(sys.argv[2]),int(sys.argv[3])))
+jobsize=float(branch(int(sys.argv[2]),int(sys.argv[3])))
 workunit=jobsize/int(cores)
 print "Cores=" + str(cores)
 print "Total job size=" + str(jobsize)
@@ -67,8 +70,8 @@ walk(int(sys.argv[2]),int(sys.argv[3]), workunit, 0, [],int(sys.argv[2]),int(sys
 
 
 
-#Slower
+#Slower branch size
 #print str(size(int(sys.argv[2]),int(sys.argv[3])))
 
-#Faster
-#print str(calc(int(sys.argv[2]),int(sys.argv[3])))
+#Faster branch size
+#print str(branch(int(sys.argv[2]),int(sys.argv[3])))
