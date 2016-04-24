@@ -1,24 +1,8 @@
 import sys
 
-# This function simply walks a branch of the tree and recursively 
-#    adds up all the node sizes found in the branch.
-# The computational complexity of the function is O(n + 3).
-def branchsize(base, reps):
-	if reps == 1:
-                return base
-        if base == 1:
-                return 1
-	total=0
-	for i in range(0, base):
-		total += branchsize(base-i, reps-1)
-	return total
-
-# While this is the "textbook formula" for computing the size of
-#   particular branch of the tree, the computational complexity
-#   of the calculation makes it less desirable than simply 
-#   walking the tree (i.e. "branch" function).
-# The complexity varies by processor, but is O(2n^2) in the 
-#   worst case.
+# This is the textbook formula for computing the size of
+#   particular branch of the tree, based on the formula for
+#   a figurate number (specifically r-topic numbers).
 def size(base, reps):
 	if reps == 1:
 		return base
@@ -61,7 +45,7 @@ cores=sys.argv[1]
 if len(sys.argv) > 4:
 	cores=sys.argv[4]
 # Calculate the total job size
-jobsize=float(branchsize(int(sys.argv[2]),int(sys.argv[3])))
+jobsize=float(size(int(sys.argv[2]),int(sys.argv[3])))
 # Calculate the size of each work unit
 workunit=jobsize/int(cores)
 print "Cores=" + str(cores)
@@ -71,10 +55,3 @@ print "Starting indexes:"
 print "0"
 partition(int(sys.argv[2]),int(sys.argv[3]), workunit, 0, [],int(sys.argv[2]),int(sys.argv[3]))
 
-
-
-#Slower branch size
-#print str(size(int(sys.argv[2]),int(sys.argv[3])))
-
-#Faster branch size
-#print str(branchsize(int(sys.argv[2]),int(sys.argv[3])))
