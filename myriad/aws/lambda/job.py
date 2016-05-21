@@ -1,8 +1,8 @@
 class Job:
     
-    def __init__(self, id="", name="", inputFile="", created=""):
+    def __init__(self, id="", name="", jobDefinition="", created=""):
         self.id = id
         self.name = name
-        self.inputFile = inputFile
+        self.jobDefinition = jobDefinition
         self.created = created
 

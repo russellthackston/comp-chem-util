@@ -18,61 +18,6 @@ logger.setLevel(logging.INFO)
 
 server_address = (rds_host, port)
 
-def get(event, context):
-    # Get the starting offset from the first record
-    if 'start' not in event:
-        start = 0
-    else:
-        start = event['start']
-        if start == "":
-            start = 0
-
-    # Get the page size
-    if 'pagesize' not in event:
-        pagesize = 10
-    else:
-        pagesize = event['pagesize']
-        if pagesize = "":
-            pagesize = 10
-
-    try:
-        conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
-    except:
-        logger.error("ERROR: Unexpected error: Could not connect to MySql instance.")
-        sys.exit()
-
-    logger.info("SUCCESS: Connection to RDS mysql instance succeeded")
-
-    found = 0
-    result = []
-
-    try:
-        with conn.cursor() as cur:
-            sql = "SELECT JobResultsID, JobID, OutputFile, ResultsCollected, MachineID, Filename, JobGUID FROM JobResults ORDER BY JobResultsID LIMIT %s, %s"
-            cur.execute(sql, (int(start), int(pagesize)))
-            for row in cur:
-                found = 1
-                j = JobResult()
-                j.id = row[0]
-                j.jobID = row[1]
-                j.outputFile = row[2]
-                if row[3] is not None:
-                    j.collected = row[3].isoformat()
-                else:
-                    j.collected = ""
-                j.machineID = row[4]
-                j.filename = row[5]
-                j.jobGUID = row[6]
-                result.append(j)
-
-    finally:
-        conn.close()
-
-    if found == 1:
-        return jsonpickle.encode(result, unpicklable=False)
-    else:
-        raise Exception('404: No job results found')
-
 def post(event, context):
     # Get Job GUID
     if 'jobGUID' not in event:
@@ -81,19 +26,12 @@ def post(event, context):
     if jobGUID == '':
         raise Exception('400: Missing job GUID')
 
-    # Get filename
-    if 'filename' not in event:
-        raise Exception('400: Missing filename')
-    filename = event['filename']
-    if filename == '':
-        raise Exception('400: Missing filename')
-
     # Get the output file contents
-    if 'outputFile' not in event:
-        raise Exception('400: Missing output file contents')
-    outputFile = event['outputFile']
-    if outputFile == '':
-        raise Exception('400: Missing output file contents')
+    if 'jobResults' not in event:
+        raise Exception('400: Missing job results')
+    jobResults = event['jobResults']
+    if jobResults == '':
+        raise Exception('400: Missing job results')
 
     try:
         conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
@@ -102,6 +40,7 @@ def post(event, context):
         sys.exit()
 
     logger.info("SUCCESS: Connection to RDS mysql instance succeeded")
+    logger.info(event)
 
     try:
         with conn.cursor() as cur:
@@ -110,13 +49,14 @@ def post(event, context):
             for row in cur:
                 found = 1
                 jobID = row[0]
-                machineID = row[1]
+                sourceIP = row[1]
             
-            sql = "INSERT INTO JobResults (JobID, OutputFile, MachineID, Filename, JobGUID, ResultsCollected) VALUES (%s, %s, %s, %s, %s, NOW())"
-            cur.execute(sql, (jobID, outputFile, machineID, filename, jobGUID))
-            conn.commit()
-            resultID = cur.lastrowid
-            logger.info("Added JobResults ID of " + str(resultID))
+            if found == 1:
+                    sql = "INSERT INTO JobResults (JobID, JobResults, MachineID, JobGUID, ResultsCollected) VALUES (%s, %s, %s, %s, NOW())"
+                    cur.execute(sql, (jobID, jobResults, str(event['source_ip']), jobGUID))
+                    conn.commit()
+                    resultID = cur.lastrowid
+                    logger.info("Added JobResults ID of " + str(resultID))
 
     finally:
         conn.close()

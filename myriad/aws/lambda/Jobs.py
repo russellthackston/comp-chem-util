@@ -19,27 +19,9 @@ logger.setLevel(logging.INFO)
 server_address = (rds_host, port)
 
 def get(event, context):
-    id = None
-    name = None
     start = None
     pagesize = None
     
-    # Get the requested job id
-    if 'id' not in event:
-        logger.info("ID not provided")
-    else:
-        id = event['id']
-        if id == "":
-            id = None
-
-    # Get the requested job name
-    if 'name' not in event:
-        logger.info("Job name not provided")
-    else:
-        name = event['name']
-        if name == "":
-            name = None
-
     # Get the starting offset from the first record
     if 'start' not in event:
         logger.info("Start not provided")
@@ -72,10 +54,10 @@ def get(event, context):
     try:
         with conn.cursor() as cur:
             if id is not None:
-                sql = "SELECT JobID, JobName, InputFile, Created FROM Jobs WHERE JobID = %s"
+                sql = "SELECT JobID, JobName, InputFile, Created FROM Jobs"
                 cur.execute(sql, (id))
             elif name is not None:
-                sql = "SELECT JobID, JobName, InputFile, Created FROM Jobs WHERE JobName = %s"
+                sql = "SELECT JobID, JobName, InputFile, Created FROM Jobs"
                 cur.execute(sql, (name))
             else:
                 sql = "SELECT JobID, JobName, InputFile, Created FROM Jobs ORDER BY JobID LIMIT %s, %s"
@@ -102,51 +84,4 @@ def get(event, context):
             return jsonpickle.encode(result, unpicklable=False)
     else:
         raise Exception('404: No job(s) found')
-
-def post(event, context):
-    # Get job name
-    if 'jobname' not in event:
-        raise Exception('400: Missing job name')
-    jobname = event['jobname']
-    if jobname == '':
-        raise Exception('400: Missing job name')
-
-    # Get the input file contents
-    if 'inputFile' not in event:
-        raise Exception('400: Missing input file contents')
-    inputFile = event['inputFile']
-    if inputFile == '':
-        raise Exception('400: Missing input file contents')
-
-    try:
-        conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
-    except:
-        logger.error("ERROR: Unexpected error: Could not connect to MySql instance.")
-        sys.exit()
-
-    logger.info("SUCCESS: Connection to RDS mysql instance succeeded")
-
-    try:
-        with conn.cursor() as cur:
-            sql = "SELECT COUNT(*) FROM Jobs WHERE JobName = %s"
-            cur.execute(sql, jobname)
-            for row in cur:
-                if int(row[0]) > 0:
-                    raise Exception('400: Job name already exists')
-
-            sql = "INSERT INTO Jobs (JobName, InputFile, Created) VALUES (%s, %s, NOW())"
-            cur.execute(sql, (jobname, inputFile))
-            conn.commit()
-            resultID = cur.lastrowid
-            logger.info("Added JobResults ID of " + str(resultID))
-            result = Job()
-            result.id = resultID
-            result.name = jobname
-            result.inputFile = inputFile
-            result.created = datetime.datetime.now().isoformat()
-
-    finally:
-        conn.close()
-
-    return jsonpickle.encode(result, unpicklable=False)
 
