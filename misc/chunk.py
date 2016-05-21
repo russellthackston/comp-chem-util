@@ -1,4 +1,4 @@
-import sys
+import sys,math
 
 # This is the textbook formula for computing the size of
 #   particular branch of the tree, based on the formula for
@@ -22,7 +22,7 @@ def partition(base, reps, target, accum, stack, basebase, repsreps):
         for i in range(0, base):
 		stack.append(i)
                 accum = partition(base-i, reps-1, target, accum, stack, basebase, repsreps)
-		if accum > target:
+		if accum >= target:
 			stack.append(base-i-1)
 			#stacklength = len(stack)
 			#while len(stack) < repsreps:
@@ -47,7 +47,7 @@ if len(sys.argv) > 4:
 # Calculate the total job size
 jobsize=float(size(int(sys.argv[2]),int(sys.argv[3])))
 # Calculate the size of each work unit
-workunit=jobsize/int(cores)
+workunit=int(math.ceil(jobsize/int(cores)))
 print "Cores=" + str(cores)
 print "Total job size=" + str(jobsize)
 print "Target work unit=" + str(workunit)
