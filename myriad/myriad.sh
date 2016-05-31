@@ -73,7 +73,12 @@ function startJob() {
 		sleep 60
 	else
 		# Build an input.dat file from the displacements
-		../mk_input_dat.sh
+		if [[ -f "../mk_input_dat.sh" ]]; then
+			../mk_input_dat.sh
+		fi
+		if [[ -f "../mk_input_dat.py" ]]; then
+                        python mk_input_dat.py
+                fi
 		echo -e "\nprint_variables()\n" >> input.dat
 
 		# Get the job GUID from the disp.dat file
