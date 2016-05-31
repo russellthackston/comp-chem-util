@@ -36,6 +36,7 @@ function uploadResults() {
 		else
 			if [ $RETRIES -eq 3 ]; then
 				echo Quitting after three failed attempts
+				break
 			fi
         	fi
 	done
@@ -66,13 +67,14 @@ function startJob() {
         echo Identified response code as $RESP_CODE
 
         if [ "$RESP_CODE" != "200" ]; then
-                echo No more jobs found in job set
+                echo "No job(s) found"
 		popd
-                #rm -Rf $DIR_NAME
+                rm -Rf $DIR_NAME
+		sleep 60
 	else
 		# Build an input.dat file from the displacements
-		# Fake an input.dat file
-		echo "Fake input file\nmemory 1000MB" > input.dat
+		../mk_input_dat.sh
+		echo -e "\nprint_variables()\n" >> input.dat
 
 		# Get the job GUID from the disp.dat file
 		jobGUID=$(head -n 2 disp.dat | tail -n 1 | cut -d ":" -f 2)
@@ -93,50 +95,54 @@ SCRATCH=/tmp
 
 startJob
 
-while [ "$RESP_CODE" = "200" ]; do
+while true; do
 
-	if [[ $OSTYPE == *"linux"* ]]; then
-		CORES=$(lscpu|grep 'CPU(s)'|head -n 1|tr -s ' '|cut -f 2 -d ' ')
-	else
-		CORES=$(sysctl hw.ncpu | cut -f 2 -d ' ')
+	if [ "$RESP_CODE" = "200" ]; then
+
+		if [[ $OSTYPE == *"linux"* ]]; then
+			CORES=$(lscpu|grep 'CPU(s)'|head -n 1|tr -s ' '|cut -f 2 -d ' ')
+		else
+			CORES=$(sysctl hw.ncpu | cut -f 2 -d ' ')
+		fi
+		echo $CORES > cpu.txt
+
+		# Check the free memory
+		if [[ $OSTYPE == *"linux"* ]]; then
+			FREE_MEM=$(free -m | grep Mem: | tr -s ' ' | cut -f 4 -d ' ')
+		else
+			FREE_MEM=$(top -l 1 -s 0 | grep 'PhysMem' | cut -f 6 -d ' ')
+		fi
+		FREE_MEM=$(echo $FREE_MEM|tr -d [A-Z][a-z])
+		FREE_MEM=$[FREE_MEM/CORES]
+		echo $FREE_MEM > freemem.txt
+		sed -i -e "s/memory .*/memory ${FREE_MEM} MB/" input.dat
+
+		echo Setting up to run PSI4 job...
+		export OMP_NUM_THREADS=$CORES
+        	export MKL_NUM_THREADS=$CORES
+		echo Set cores to $CORES with $FREE_MEM MB per core
+
+		echo Running PSI4 job...
+		if [[ $OSTYPE == *"linux"* ]]; then
+			/usr/bin/time -v -o "time.out" psi4 > psi4.out 2> psi4.err
+		else
+			/usr/bin/time psi4 > psi4.out 2> psi4.err
+		fi
+		echo Done running PSI4 job.
+
+		# Extact the results from the output.dat file
+		ENERGYLINE=$(grep "CURRENT ENERGY" output.dat | tail -n 1)
+		ENERGYVAL=${ENERGYLINE##*>}
+		echo "$ENERGYVAL" > result.dat
+
+		uploadResults
+
+		# Clear the scratch space
+		echo Clearing the scratch folder
+		rm -Rf $SCRATCH/* 2> /dev/null
+
+		popd
 	fi
-	echo $CORES > cpu.txt
-
-	# Check the free memory
-	if [[ $OSTYPE == *"linux"* ]]; then
-		FREE_MEM=$(free -m | grep Mem: | tr -s ' ' | cut -f 4 -d ' ')
-	else
-		FREE_MEM=$(top -l 1 -s 0 | grep 'PhysMem' | cut -f 6 -d ' ')
-	fi
-	FREE_MEM=$(echo $FREE_MEM|tr -d [A-Z][a-z])
-	FREE_MEM=$[FREE_MEM/CORES]
-	echo $FREE_MEM > freemem.txt
-	sed -i -e "s/memory .*/memory ${FREE_MEM} MB/" input.dat
-
-	echo Setting up to run PSI4 job...
-	export OMP_NUM_THREADS=$CORES
-        export MKL_NUM_THREADS=$CORES
-	echo Set cores to $CORES with $FREE_MEM MB per core
-
-	echo Running PSI4 job...
-	if [[ $OSTYPE == *"linux"* ]]; then
-		/usr/bin/time -v -o "time.out" psi4 > psi4.out 2> psi4.err
-	else
-		/usr/bin/time psi4 > psi4.out 2> psi4.err
-	fi
-	echo Done running PSI4 job.
-
-	# Extact the results from the output.dat file
-	# Fake result.dat
-	echo "123.123456" > result.dat
-
-	uploadResults
-
-	# Clear the scratch space
-	echo Clearing the scratch folder
-	rm -Rf $SCRATCH/* 2> /dev/null
-
-	popd
 
 	startJob
 
