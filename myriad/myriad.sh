@@ -77,10 +77,10 @@ function startJob() {
 			../mk_input_dat.sh
 		fi
 		if [[ -f "../mk_input_dat.py" ]]; then
-                        python mk_input_dat.py
+                        python ../mk_input_dat.py
                 fi
 		# TODO: Add error check for no mk_input_dat.* file
-		if [ ! -f mk_input_dat.sh && ! -f mk_input_dat.py ]; then
+		if [ ! -f ../mk_input_dat.sh && ! -f ../mk_input_dat.py ]; then
 			echo "No mk_input_dat.* script present"
 			exit 1
 		fi
