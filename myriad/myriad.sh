@@ -80,6 +80,10 @@ function startJob() {
                         python mk_input_dat.py
                 fi
 		# TODO: Add error check for no mk_input_dat.* file
+		if [ ! -f mk_input_dat.sh && ! -f mk_input_dat.py ]; then
+			echo "No mk_input_dat.* script present"
+			exit 1
+		fi
 		echo -e "\nprint_variables()\n" >> input.dat
 
 		# Get the job GUID from the disp.dat file
