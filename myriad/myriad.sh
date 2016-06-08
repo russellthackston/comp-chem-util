@@ -79,6 +79,7 @@ function startJob() {
 		if [[ -f "../mk_input_dat.py" ]]; then
                         python mk_input_dat.py
                 fi
+		# TODO: Add error check for no mk_input_dat.* file
 		echo -e "\nprint_variables()\n" >> input.dat
 
 		# Get the job GUID from the disp.dat file
