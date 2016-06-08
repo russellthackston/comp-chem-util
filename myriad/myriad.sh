@@ -72,16 +72,20 @@ function startJob() {
                 rm -Rf $DIR_NAME
 		sleep 60
 	else
+
+		# Copy the mk_input_dat.* script to the job folder
+		cp ../mk_input_dat.* .
+
 		# Build an input.dat file from the displacements
-		if [[ -f "../mk_input_dat.sh" ]]; then
-			../mk_input_dat.sh
+		if [[ -f "mk_input_dat.sh" ]]; then
+			chmod +x mk_input_dat.sh
+			mk_input_dat.sh
 		fi
-		if [[ -f "../mk_input_dat.py" ]]; then
-                        python ../mk_input_dat.py
+		if [[ -f "mk_input_dat.py" ]]; then
+                        python mk_input_dat.py
                 fi
-		# TODO: Add error check for no mk_input_dat.* file
-		if [ ! -f ../mk_input_dat.sh && ! -f ../mk_input_dat.py ]; then
-			echo "No mk_input_dat.* script present"
+		if [[ ! -f "input.dat" ]]; then
+			echo "Error: No input.dat found"
 			exit 1
 		fi
 		echo -e "\nprint_variables()\n" >> input.dat
