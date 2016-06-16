@@ -168,6 +168,10 @@ while true; do
 
 		popd
 		sleep 2
+
+		if [[ -f "~/halt.psi4" ]]; then
+			exit 0;
+		fi
 	fi
 
 	startJob
