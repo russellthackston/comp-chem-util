@@ -79,10 +79,10 @@ function startJob() {
 		# Build an input.dat file from the displacements
 		if [[ -f "mk_input_dat.sh" ]]; then
 			chmod +x mk_input_dat.sh
-			mk_input_dat.sh
+			mk_input_dat.sh $MK_INPUT_DAT_PARM
 		fi
 		if [[ -f "mk_input_dat.py" ]]; then
-                        python mk_input_dat.py
+                        python mk_input_dat.py $MK_INPUT_DAT_PARM
                 fi
 		if [[ ! -f "input.dat" ]]; then
 			echo "Error: No input.dat found"
@@ -91,18 +91,18 @@ function startJob() {
 		echo -e "\nprint_variables()\n" >> input.dat
 
 		# Get the job GUID from the disp.dat file
-		jobGUID=$(head -n 2 disp.dat | tail -n 1 | cut -d ":" -f 2)
+		jobGUID=$(cat disp.dat | grep 'JobGUID' | head -n 1 | cut -d ":" -f 2)
 		# Remove whitespace
 		jobGUID="$(sed -e 's/[[:space:]]*$//' <<<${jobGUID})"
 		echo $jobGUID
 
 		# Get the job number from the disp.dat file
-        	JOB_NUMBER=$(head -n 1 disp.dat | cut -d':' -f 2)
+        	JOB_NUMBER=$(cat disp.dat | grep 'JobID' | head -n 1 | cut -d':' -f 2)
         	JOB_NUMBER="$(echo -e "${JOB_NUMBER}" | tr -d '[[:space:]]')"
         	echo Identified job number as $JOB_NUMBER
 
 		# Get the MakeInputDatParameters from the disp.dat file
-                MK_INPUT_DAT_PARM=$(head -n 3 disp.dat | cut -d':' -f 2)
+                MK_INPUT_DAT_PARM=$(cat disp.dat | grep 'MakeInputDatParameters' | head -n 1 | cut -d':' -f 2)
                 MK_INPUT_DAT_PARM="$(echo -e "${MK_INPUT_DAT_PARM}" | tr -d '[[:space:]]')"
                 echo Input parameters for mk_input_dat defined as $MK_INPUT_DAT_PARM
         fi
