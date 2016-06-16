@@ -73,6 +73,22 @@ function startJob() {
 		sleep 60
 	else
 
+		# Get the job GUID from the disp.dat file
+                jobGUID=$(cat disp.dat | grep 'JobGUID' | head -n 1 | cut -d ":" -f 2)
+                # Remove whitespace
+                jobGUID="$(sed -e 's/[[:space:]]*$//' <<<${jobGUID})"
+                echo $jobGUID
+
+                # Get the job number from the disp.dat file
+                JOB_NUMBER=$(cat disp.dat | grep 'JobID' | head -n 1 | cut -d':' -f 2)
+                JOB_NUMBER="$(echo -e "${JOB_NUMBER}" | tr -d '[[:space:]]')"
+                echo Identified job number as $JOB_NUMBER
+
+                # Get the MakeInputDatParameters from the disp.dat file
+                MK_INPUT_DAT_PARM=$(cat disp.dat | grep 'MakeInputDatParameters' | head -n 1 | cut -d':' -f 2)
+                MK_INPUT_DAT_PARM="$(echo -e "${MK_INPUT_DAT_PARM}" | tr -d '[[:space:]]')"
+                echo Input parameters for mk_input_dat defined as $MK_INPUT_DAT_PARM
+
 		# Copy the mk_input_dat.* script to the job folder
 		cp ../mk_input_dat.* .
 
@@ -90,21 +106,6 @@ function startJob() {
 		fi
 		echo -e "\nprint_variables()\n" >> input.dat
 
-		# Get the job GUID from the disp.dat file
-		jobGUID=$(cat disp.dat | grep 'JobGUID' | head -n 1 | cut -d ":" -f 2)
-		# Remove whitespace
-		jobGUID="$(sed -e 's/[[:space:]]*$//' <<<${jobGUID})"
-		echo $jobGUID
-
-		# Get the job number from the disp.dat file
-        	JOB_NUMBER=$(cat disp.dat | grep 'JobID' | head -n 1 | cut -d':' -f 2)
-        	JOB_NUMBER="$(echo -e "${JOB_NUMBER}" | tr -d '[[:space:]]')"
-        	echo Identified job number as $JOB_NUMBER
-
-		# Get the MakeInputDatParameters from the disp.dat file
-                MK_INPUT_DAT_PARM=$(cat disp.dat | grep 'MakeInputDatParameters' | head -n 1 | cut -d':' -f 2)
-                MK_INPUT_DAT_PARM="$(echo -e "${MK_INPUT_DAT_PARM}" | tr -d '[[:space:]]')"
-                echo Input parameters for mk_input_dat defined as $MK_INPUT_DAT_PARM
         fi
 }
 
