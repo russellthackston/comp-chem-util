@@ -142,18 +142,24 @@ while true; do
 		else
 			/usr/bin/time psi4 > psi4.out 2> psi4.err
 		fi
-		echo Done running PSI4 job.
+		echo Done running PSI4 job with exit code $?
 
-		# Extact the results from the output.dat file
-		ENERGYLINE=$(grep "CURRENT ENERGY" output.dat | tail -n 1)
-		ENERGYVAL=${ENERGYLINE##*>}
-		echo "$ENERGYVAL" > result.dat
+		if [[ $? == 0 ]]; then
 
-		uploadResults
+			# Extact the results from the output.dat file
+			ENERGYLINE=$(grep "CURRENT ENERGY" output.dat | tail -n 1)
+			ENERGYVAL=${ENERGYLINE##*>}
+			echo "$ENERGYVAL" > result.dat
 
-		# Clear the scratch space
-		echo Clearing the scratch folder
-		rm -Rf $SCRATCH/* 2> /dev/null
+			uploadResults
+
+			# Clear the scratch space
+			echo Clearing the scratch folder
+			rm -Rf $SCRATCH/* 2> /dev/null
+
+		else
+			echo PSI4 job failed. Nothing to upload.
+		fi
 
 		popd
 	fi
