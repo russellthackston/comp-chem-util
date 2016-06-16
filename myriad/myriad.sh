@@ -100,6 +100,11 @@ function startJob() {
         	JOB_NUMBER=$(head -n 1 disp.dat | cut -d':' -f 2)
         	JOB_NUMBER="$(echo -e "${JOB_NUMBER}" | tr -d '[[:space:]]')"
         	echo Identified job number as $JOB_NUMBER
+
+		# Get the MakeInputDatParameters from the disp.dat file
+                MK_INPUT_DAT_PARM=$(head -n 3 disp.dat | cut -d':' -f 2)
+                MK_INPUT_DAT_PARM="$(echo -e "${MK_INPUT_DAT_PARM}" | tr -d '[[:space:]]')"
+                echo Input parameters for mk_input_dat defined as $MK_INPUT_DAT_PARM
         fi
 }
 
