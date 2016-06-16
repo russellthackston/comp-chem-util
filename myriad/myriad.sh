@@ -144,7 +144,7 @@ while true; do
 		fi
 		echo Done running PSI4 job with exit code $?
 
-		if [[ $? == 0 ]]; then
+		if [[ '$?' == '0' ]]; then
 
 			# Extact the results from the output.dat file
 			ENERGYLINE=$(grep "CURRENT ENERGY" output.dat | tail -n 1)
@@ -162,6 +162,7 @@ while true; do
 		fi
 
 		popd
+		sleep 2
 	fi
 
 	startJob
