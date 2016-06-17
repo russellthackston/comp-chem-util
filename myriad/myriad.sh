@@ -44,7 +44,8 @@ function uploadResults() {
 }
 
 function startJob() {
-        rm -Rf $SCRATCH/* 2> /dev/null
+	echo Clearing the scratch folder...
+        rm -Rf $PSI_SCRATCH/* 2> /dev/null
 
         # Make a folder for this job
         DIR_NAME=$(date +%Y%m%d_%H%M%S)
@@ -111,8 +112,6 @@ function startJob() {
 
 loadConfig
 
-SCRATCH=/tmp
-
 startJob
 
 while true; do
@@ -171,7 +170,7 @@ while true; do
 
 		# Clear the scratch space
                 echo Clearing the scratch folder
-                rm -Rf $SCRATCH/* 2> /dev/null
+                rm -Rf $PSI_SCRATCH/* 2> /dev/null
 
 		popd
 
