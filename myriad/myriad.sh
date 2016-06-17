@@ -175,9 +175,15 @@ while true; do
 
 		popd
 
+		# Kill switch
 		if [[ -f "halt.psi4" ]]; then
 			exit 0;
 		fi
+
+		# Pause switch
+		while [[ -f "pause.psi4" ]]; do
+			sleep 60
+		done
 	fi
 
 	startJob
