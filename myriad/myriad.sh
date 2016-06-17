@@ -64,6 +64,20 @@ function startJob() {
         curl --request GET ${INPUT_REQUEST} -w "\n\n# Response Code: %{http_code}\n" -H "Content-Type: text/plain" -d "" > disp.dat
         echo Displacements file written to $(pwd)
 
+	# Check for web service errors
+	ERROR_CHECK=$(cat disp.dat | grep 'errorMessage')
+	while [[ $ERROR_CHECK == *"errorMessage"* ]]; do
+		echo *** Begin disp.dat ***
+		cat disp.dat
+		echo *** End disp.dat ***
+		echo Web service returned an error. Retrying in 30 seconds...
+		sleep 30
+		echo Accessing web service: $INPUT_REQUEST
+        	curl --request GET ${INPUT_REQUEST} -w "\n\n# Response Code: %{http_code}\n" -H "Content-Type: text/plain" -d "" > disp.dat
+	        echo Displacements file written to $(pwd)
+		ERROR_CHECK=$(cat disp.dat | grep 'errorMessage')
+	done
+
         RESP_CODE=$(tail -n 1 disp.dat | cut -d':' -f 2)
         RESP_CODE="$(echo -e "${RESP_CODE}" | tr -d '[[:space:]]')"
         echo Identified response code as $RESP_CODE
