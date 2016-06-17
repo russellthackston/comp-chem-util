@@ -150,10 +150,11 @@ while true; do
 
 		echo Done running PSI4 job with exit code $?
 
+		df > diskspace.txt
+
 		if [ $? != 0 ]; then
 
 			echo PSI4 job failed. Nothing to upload.
-                        df > diskspace.txt
 			sleep 10
 
 		else
