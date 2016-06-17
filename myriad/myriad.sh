@@ -108,6 +108,9 @@ function startJob() {
         fi
 }
 
+# sleep for 1-60 seconds on first run, so a group of VMs don't all grab the same job
+sleep $(shuf -i 1-60 -n 1)
+
 loadConfig
 
 SCRATCH=/tmp
