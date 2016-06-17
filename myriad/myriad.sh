@@ -12,9 +12,9 @@ function loadConfig() {
 }
 
 function uploadResults() {
-	RETRIES=0
+	ATTEMPTS=0
 	UPRESP_CODE="0"
-	while [ "$UPRESP_CODE" != "200" ] && [ $RETRIES -lt 3 ]; do
+	while [ "$UPRESP_CODE" != "200" ] && [ "$ATTEMPTS" -lt 3 ]; do
 	        echo Attempting to upload results...
 
 		# Substitute values for variables in URL
@@ -29,13 +29,13 @@ function uploadResults() {
         	UPRESP_CODE="$(echo -e "${UPRESP_CODE}" | tr -d '[[:space:]]')"
         	echo Identified response code as $UPRESP_CODE
 
-        	if [ "$UPRESP_CODE" != "200" ] && [ $RETRIES < 3 ]; then
+        	if [ "$UPRESP_CODE" != "200" ] && [ "$ATTEMPTS" -lt 3 ]; then
                 	echo Upload error. Retrying in 30 seconds...
-			let RETRIES=RETRIES+1
+			let ATTEMPTS=ATTEMPTS+1
 			sleep 30
 		else
-			if [ $RETRIES -eq 3 ]; then
-				echo Quitting after three failed attempts
+			if [ "$ATTEMPTS" -eq 3 ]; then
+				echo Quitting after three failed attempts. Unable to upload results.
 				break
 			fi
         	fi
