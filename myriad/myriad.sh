@@ -13,6 +13,7 @@ function loadConfig() {
 
 function uploadResults() {
 	ATTEMPTS=0
+	MAX_ATTEMPTS=3
 	UPRESP_CODE="0"
 	while [ "$UPRESP_CODE" != "200" ] && [ "$ATTEMPTS" -lt 3 ]; do
 	        echo Attempting to upload results...
@@ -29,13 +30,13 @@ function uploadResults() {
         	UPRESP_CODE="$(echo -e "${UPRESP_CODE}" | tr -d '[[:space:]]')"
         	echo Identified response code as $UPRESP_CODE
 
-        	if [ "$UPRESP_CODE" != "200" ] && [ "$ATTEMPTS" -lt 3 ]; then
+        	if [ "$UPRESP_CODE" != "200" ] && [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; then
                 	echo Upload error. Retrying in 30 seconds...
 			let ATTEMPTS=ATTEMPTS+1
 			sleep 30
 		else
-			if [ "$ATTEMPTS" -eq 3 ]; then
-				echo Quitting after three failed attempts. Unable to upload results.
+			if [ "$ATTEMPTS" -eq "$MAX_ATTEMPTS" ]; then
+				echo Quitting after max number of failed attempts. Unable to upload results.
 				break
 			fi
         	fi
@@ -152,10 +153,9 @@ while true; do
 
 		df > diskspace.txt
 
-		if [ $? != 0 ]; then
+		if [ "$?" -ne "0" ]; then
 
 			echo PSI4 job failed. Nothing to upload.
-			sleep 10
 
 		else
 
