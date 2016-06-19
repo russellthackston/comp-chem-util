@@ -5,6 +5,7 @@ class Myriad:
         config = []
         jobrunnerPOST = ""
         outputPOST = ""
+        cpus = 1
         
         def __init__(self):
                 config = []
@@ -23,6 +24,11 @@ class Myriad:
                                 outputPOST = line.split(' ')[1].trim()
                                 print('Output POST endpoint set to ' + outputPOST)
                 
+                # Load number of cores from file
+                f = open('cpu.txt')
+                cpus = int(f.readline())
+                f.close()
+
                 #   Get system specs
                 #   Configure psi4
                 #   Run psi4
