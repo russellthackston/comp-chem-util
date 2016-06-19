@@ -7,6 +7,8 @@ m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/ma
 def downloadMyriad():
         downloadMyriadFile('libmyriad.py')
         downloadMyriadFile('myriad.py')
+        import libmyriad
+        import myriad
         importlib.reload(libmyriad)
         importlib.reload(myriad)
 
@@ -19,8 +21,6 @@ def downloadMyriadFile(filename):
 
 # Initial import of myriad script from github
 downloadMyriad()
-#import libmyriad
-#import myriad
 
 while(True):
 
