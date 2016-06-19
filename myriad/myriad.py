@@ -29,7 +29,7 @@ class Myriad:
                 # Load number of cores from file
                 #f = open('cpus.txt')
                 #cpus = int(f.readline().strip())
-                cpus = multiprocessing.cpu_count()
+                cpus = psutil.cpu_count()
                 #f.close()
                 print('Number of cores set to ' + str(cpus))
                 
