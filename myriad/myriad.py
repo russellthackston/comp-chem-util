@@ -18,8 +18,10 @@ class Myriad:
                 for line in lines:
                         if line.startswith('JobRunner_GET '):
                                 jobrunnerPOST = line.split(' ')[1]
+                                print('JobRunner POST endpoint set to ' + jobrunnerPOST)
                         if line.startswith('Output_POST '):
                                 outputPOST = line.split(' ')[1]
+                                print('Output POST endpoint set to ' + jobrunnerPOST)
                 
                 #   Get system specs
                 #   Configure psi4
