@@ -28,6 +28,7 @@ class Myriad:
                 f = open('cpus.txt')
                 cpus = int(f.readline().strip())
                 f.close()
+                print('Number of cores set to ' + cpus)
 
                 #   Get system specs
                 #   Configure psi4
