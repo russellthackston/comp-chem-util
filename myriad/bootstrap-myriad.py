@@ -1,4 +1,16 @@
 import requests
+import importlib
 
-r = requests.get('https://s3.amazonaws.com/psi4share/SNS/mk_input_dat.py')
-print r.text
+def downloadMyriad():
+        r = requests.get('https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/myriad.py')
+        f = open('myriad.py', 'w')
+        f.write(r.text)
+        f.flush()
+        f.close()
+
+while(True):
+        downloadMyriad()
+        import myriad
+        myriad.loadConfig()
+        importlib.reload(module)
+        break
