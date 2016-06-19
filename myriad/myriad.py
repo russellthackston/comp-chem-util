@@ -18,15 +18,15 @@ class Myriad:
                 f.close()
                 for line in lines:
                         if line.startswith('JobRunner_GET '):
-                                jobrunnerPOST = line.split(' ')[1].trim()
+                                jobrunnerPOST = line.split(' ')[1].strip()
                                 print('JobRunner POST endpoint set to ' + jobrunnerPOST)
                         if line.startswith('Output_POST '):
-                                outputPOST = line.split(' ')[1].trim()
+                                outputPOST = line.split(' ')[1].strip()
                                 print('Output POST endpoint set to ' + outputPOST)
                 
                 # Load number of cores from file
                 f = open('cpu.txt')
-                cpus = int(f.readline())
+                cpus = int(f.readline().strip())
                 f.close()
 
                 #   Get system specs
