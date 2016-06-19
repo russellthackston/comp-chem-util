@@ -1,5 +1,6 @@
 from libmyriad import ResultCode
 import requests
+import multiprocessing
 
 class Myriad:
         config = []
@@ -25,9 +26,10 @@ class Myriad:
                                 print('Output POST endpoint set to ' + outputPOST)
                 
                 # Load number of cores from file
-                f = open('cpus.txt')
-                cpus = int(f.readline().strip())
-                f.close()
+                #f = open('cpus.txt')
+                #cpus = int(f.readline().strip())
+                cpus = multiprocessing.cpu_count()
+                #f.close()
                 print('Number of cores set to ' + str(cpus))
 
                 #   Get system specs
