@@ -4,6 +4,7 @@ import multiprocessing
 import psutil
 import os
 import subprocess
+import shutil
 
 class Myriad:
         
@@ -71,19 +72,27 @@ class Myriad:
         def uploadResults(self):
                 pass
 
+        def clearScratch(self):
+                folder = os.environ['PSI_SCRATCH']
+                for the_file in os.listdir(folder):
+                        file_path = os.path.join(folder, the_file)
+                        try:
+                                if os.path.isfile(file_path):
+                                        os.unlink(file_path)
+                                elif os.path.isdir(file_path):
+                                        shutil.rmtree(file_path)
+                        except Exception as e:
+                             print(e)                
+                pass
+
         # Main
         def runOnce(self):
                 self.loadEndpoints()
                 self.getJob()
                 self.getSystemSpecs()
+                self.clearScratch()
                 result = self.runPsi4()
                 if result == ResultCode.success:
                         self.uploadResults()
-
-                #   Check exit code
-                #   Upload results
-                #   Clear scratch
-
-                return ResultCode.success
-
-
+                self.clearScratch()
+                return result
