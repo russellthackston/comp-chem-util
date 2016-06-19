@@ -25,7 +25,7 @@ class Myriad:
                                 print('Output POST endpoint set to ' + outputPOST)
                 
                 # Load number of cores from file
-                f = open('cpu.txt')
+                f = open('cpus.txt')
                 cpus = int(f.readline().strip())
                 f.close()
 
