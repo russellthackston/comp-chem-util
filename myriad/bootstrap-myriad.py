@@ -32,6 +32,7 @@ class Bootstrap:
                                 # Download a (potentially) updated copy of Myriad
                                 self.downloadMyriad()
 
+                        # Remove this after testing
                         break
 
 b = Bootstrap()
