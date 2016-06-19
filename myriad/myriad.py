@@ -1,4 +1,12 @@
+import requests
+
+config = []
+
 # Function: Load configuration from config.txt
+def loadConfig:
+        f = open('config.txt')
+        c = f.read()
+        print c
 
 # Function: Upload results to web service
 
