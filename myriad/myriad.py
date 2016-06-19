@@ -38,20 +38,23 @@ class Myriad:
                 os.environ["OMP_NUM_THREADS"] = str(cpus)
                 os.environ["MKL_NUM_THREADS"] = str(cpus)
                 myoutput = open('env.out', 'w')
-                p = subprocess.Popen("env", stdin=myinput, stdout=myoutput)
+                p = subprocess.Popen("env", stdout=myoutput)
                 p.wait()
                 myoutput.flush()
                 myoutput.close()
                 mem = psutil.virtual_memory().available
                 print('Bytes of available memory ' + str(mem))
 
+        def runPsi4(self):
+                pass
+
         # Main
         def runOnce(self):
                 self.loadEndpoints()
                 self.getSystemSpecs()
+                self.runPsi4()
                 
 
-                #   Configure psi4
                 #   Run psi4
                 #   Check exit code
                 #   Upload results
