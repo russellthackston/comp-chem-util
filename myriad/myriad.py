@@ -31,6 +31,9 @@ class Myriad:
                 cpus = multiprocessing.cpu_count()
                 #f.close()
                 print('Number of cores set to ' + str(cpus))
+                
+                specs = psutil.virtual_memory()
+                print(str(specs))
 
                 #   Get system specs
                 #   Configure psi4
