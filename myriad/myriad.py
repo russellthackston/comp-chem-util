@@ -18,6 +18,7 @@ class Myriad:
 
         # Main
         def runOnce(self):
+                self.loadConfig()
                 return ResultCode.success
 
         # loadConfig
