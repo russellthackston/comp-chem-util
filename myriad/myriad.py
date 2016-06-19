@@ -3,6 +3,7 @@ import requests
 import multiprocessing
 import psutil
 import os
+import subprocess
 
 class Myriad:
         config = []
@@ -36,6 +37,11 @@ class Myriad:
                 print('Number of cores set to ' + str(cpus))
                 os.environ["OMP_NUM_THREADS"] = str(cpus)
                 os.environ["MKL_NUM_THREADS"] = str(cpus)
+                myoutput = open('env.out', 'w')
+                p = subprocess.Popen("env", stdin=myinput, stdout=myoutput)
+                p.wait()
+                myoutput.flush()
+                myoutput.close()
                 mem = psutil.virtual_memory().available
                 print('Bytes of available memory ' + str(mem))
 
