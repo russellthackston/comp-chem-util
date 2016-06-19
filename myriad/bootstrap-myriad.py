@@ -6,8 +6,8 @@ class Bootstrap:
         m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
 
         def downloadMyriad(self, reload):
-                downloadMyriadFile('libmyriad.py')
-                downloadMyriadFile('myriad.py')
+                self.downloadMyriadFile('libmyriad.py')
+                self.downloadMyriadFile('myriad.py')
                 from libmyriad import ResultCode
                 from myriad import Myriad
                 if reload:
@@ -23,17 +23,17 @@ class Bootstrap:
 
         def run(self):
                 # Initial import of myriad script from github
-                downloadMyriad(False)
+                self.downloadMyriad(False)
 
                 while(True):
 
                         # run myriad (once)
-                        myriad = Myriad()
-                        result = myriad.runOnce()
+                        m = Myriad()
+                        result = m.runOnce()
 
                         # Reload myriad script, in case it changed on the server
-                        downloadMyriad(True)
-                        myriad.loadConfig()
+                        self.downloadMyriad(True)
+                        m.loadConfig()
                         break
 
 b = Bootstrap()
