@@ -12,7 +12,7 @@ def loadConfig():
 # Function: Start psi4 job
 
 # Main
-def run():
+def runOnce():
         pass
 # loadConfig
 # startJob

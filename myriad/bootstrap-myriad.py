@@ -17,7 +17,7 @@ import myriad
 while(True):
 
         # run myriad (once)
-        myriad.run()
+        myriad.runOnce()
 
         # Reload myriad script, in case it changed on the server
         downloadMyriad()
