@@ -33,8 +33,8 @@ class Myriad:
                 #f.close()
                 print('Number of cores set to ' + str(cpus))
                 
-                specs = psutil.virtual_memory()
-                print(str(specs))
+                mem = psutil.virtual_memory().available
+                print('Bytes of available memory ' + str(mem))
 
                 #   Get system specs
                 #   Configure psi4
