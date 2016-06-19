@@ -5,7 +5,7 @@ config = []
 # Function: Load configuration from config.txt
 def loadConfig():
         f = open('config.txt')
-        print f.read()
+        print f.readline()
 
 # Function: Upload results to web service
 
