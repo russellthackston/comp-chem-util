@@ -8,12 +8,16 @@ class Myriad:
         jobrunnerPOST = ""
         outputPOST = ""
         cpus = 1
+        mem = 1
         
         def __init__(self):
                 config = []
-
-        # Main
-        def runOnce(self):
+                jobrunnerPOST = ""
+                outputPOST = ""
+                cpus = 1
+                mem = 1
+        
+        def loadEndpoints(self):
                 # Load the configuration values from file
                 f = open('config.txt')
                 lines = f.readlines()
@@ -25,18 +29,21 @@ class Myriad:
                         if line.startswith('Output_POST '):
                                 outputPOST = line.split(' ')[1].strip()
                                 print('Output POST endpoint set to ' + outputPOST)
-                
-                # Load number of cores from file
-                #f = open('cpus.txt')
-                #cpus = int(f.readline().strip())
+
+        def getSystemSpecs(self):
                 cpus = psutil.cpu_count()
-                #f.close()
                 print('Number of cores set to ' + str(cpus))
-                
+                os.environ["OMP_NUM_THREADS"] = str(cpus)
+                os.environ["MKL_NUM_THREADS"] = str(cpus)
                 mem = psutil.virtual_memory().available
                 print('Bytes of available memory ' + str(mem))
 
-                #   Get system specs
+        # Main
+        def runOnce(self):
+                self.loadEndpoints()
+                self.getSystemSpecs()
+                
+
                 #   Configure psi4
                 #   Run psi4
                 #   Check exit code
