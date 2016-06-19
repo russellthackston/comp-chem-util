@@ -46,16 +46,19 @@ class Myriad:
                 print('Bytes of available memory ' + str(mem))
 
         def runPsi4(self):
+                return ResultCode.success
+
+        def uploadResults(self):
                 pass
 
         # Main
         def runOnce(self):
                 self.loadEndpoints()
                 self.getSystemSpecs()
-                self.runPsi4()
-                
+                result = self.runPsi4()
+                if result == ResultCode.success:
+                        self.uploadResults()
 
-                #   Run psi4
                 #   Check exit code
                 #   Upload results
                 #   Clear scratch
