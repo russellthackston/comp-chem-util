@@ -13,7 +13,7 @@ def loadConfig():
 
 # Main
 def run():
-        continue
+        pass
 # loadConfig
 # startJob
 # Loop:
