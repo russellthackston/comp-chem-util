@@ -28,7 +28,7 @@ class Bootstrap:
                 while(True):
 
                         # run myriad (once)
-                        m = Myriad()
+                        m = myriad.Myriad()
                         result = m.runOnce()
 
                         # Reload myriad script, in case it changed on the server
