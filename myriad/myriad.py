@@ -1,4 +1,4 @@
-import libmyriad
+from libmyriad import ResultCode
 import requests
 
 config = []
