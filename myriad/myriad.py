@@ -22,10 +22,10 @@ class Myriad:
                 for line in lines:
                         if line.startswith('JobRunner_GET '):
                                 self.jobrunnerGET = line.split(' ')[1].strip()
-                                print('JobRunner GET endpoint set to ' + jobrunnerGET)
+                                print('JobRunner GET endpoint set to ' + self.jobrunnerGET)
                         if line.startswith('Output_POST '):
                                 self.outputPOST = line.split(' ')[1].strip()
-                                print('Output POST endpoint set to ' + outputPOST)
+                                print('Output POST endpoint set to ' + self.outputPOST)
 
         def getJob(self):
                 print("Requesting a new job from " + str(self.jobrunnerGET))
@@ -53,17 +53,17 @@ class Myriad:
                 print(job)
 
         def getSystemSpecs(self):
-                cpus = psutil.cpu_count()
-                print('Number of cores set to ' + str(cpus))
-                os.environ["OMP_NUM_THREADS"] = str(cpus)
-                os.environ["MKL_NUM_THREADS"] = str(cpus)
+                self.cpus = psutil.cpu_count()
+                print('Number of cores set to ' + str(self.cpus))
+                os.environ["OMP_NUM_THREADS"] = str(self.cpus)
+                os.environ["MKL_NUM_THREADS"] = str(self.cpus)
                 myoutput = open('env.out', 'w')
                 p = subprocess.Popen("env", stdout=myoutput)
                 p.wait()
                 myoutput.flush()
                 myoutput.close()
-                mem = psutil.virtual_memory().available
-                print('Bytes of available memory ' + str(mem))
+                self.mem = psutil.virtual_memory().available
+                print('Bytes of available memory ' + str(self.mem))
 
         def runPsi4(self):
                 return ResultCode.success
