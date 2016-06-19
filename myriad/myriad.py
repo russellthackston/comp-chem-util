@@ -6,18 +6,13 @@ import os
 import subprocess
 
 class Myriad:
-        config = []
-        jobrunnerGET = ""
-        outputPOST = ""
-        cpus = 1
-        mem = 1
         
         def __init__(self):
-                config = []
-                jobrunnerGET = ""
-                outputPOST = ""
-                cpus = 1
-                mem = 1
+                self.config = []
+                self.jobrunnerGET = ""
+                self.outputPOST = ""
+                self.cpus = 1
+                self.mem = 1
         
         def loadEndpoints(self):
                 # Load the configuration values from file
@@ -37,15 +32,25 @@ class Myriad:
                 r = requests.get(self.jobrunnerGET)
                 # Check for good HTTP response
                 if r.status_code == 200:
-                        # Check for logically error in response
+                        # Check for logical error in response
                         if not "errorMessage" in r.text:
                                 print("Good response: " + str(r.text))
+                                self.parseJob(r.text)
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
                 else:
                         # HTTP error
                         print("HTTP error: " + str(r.status_code))
+
+        def parseJob(self, job):
+                # Should look like this...
+                #    # JobID: 527
+                #    # JobGUID: b4af8ced-3661-11e6-a162-12fe8751cda9
+                #    # MakeInputDatParameters: -t MTc
+                #    -1,1,-2
+                print("Parsing job")
+                print(job)
 
         def getSystemSpecs(self):
                 cpus = psutil.cpu_count()
