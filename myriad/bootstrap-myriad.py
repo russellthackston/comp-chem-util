@@ -3,7 +3,7 @@ import importlib
 
 m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
 
-def downloadMyriad(reload):
+def downloadMyriad(self, reload):
         downloadMyriadFile('libmyriad.py')
         downloadMyriadFile('myriad.py')
         from libmyriad import ResultCode
@@ -12,7 +12,7 @@ def downloadMyriad(reload):
                 importlib.reload(libmyriad)
                 importlib.reload(myriad)
 
-def downloadMyriadFile(filename):
+def downloadMyriadFile(self, filename):
         r = requests.get(m_server + filename)
         f = open(filename, 'w')
         f.write(r.text)

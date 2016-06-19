@@ -5,7 +5,7 @@ class Myriad:
         config = []
 
         # Function: Load configuration from config.txt
-        def loadConfig():
+        def loadConfig(self):
                 f = open('config.txt')
                 print(f.readline())
 
@@ -14,7 +14,7 @@ class Myriad:
         # Function: Start psi4 job
 
         # Main
-        def runOnce():
+        def runOnce(self):
                 return ResultCode.success
 
         # loadConfig
