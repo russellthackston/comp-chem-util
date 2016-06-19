@@ -26,13 +26,14 @@ class Myriad:
                 f.close()
                 for line in lines:
                         if line.startswith('JobRunner_GET '):
-                                jobrunnerGET = line.split(' ')[1].strip()
-                                print('JobRunner POST endpoint set to ' + jobrunnerGET)
+                                self.jobrunnerGET = line.split(' ')[1].strip()
+                                print('JobRunner GET endpoint set to ' + jobrunnerGET)
                         if line.startswith('Output_POST '):
-                                outputPOST = line.split(' ')[1].strip()
+                                self.outputPOST = line.split(' ')[1].strip()
                                 print('Output POST endpoint set to ' + outputPOST)
 
         def getJob(self):
+                print("Requesting a new job from " + str(self.jobrunnerGET))
                 r = requests.get(self.jobrunnerGET)
                 # Check for good HTTP response
                 if r.status_code == 200:
