@@ -4,13 +4,14 @@ from enum import Enum
 
 m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
 
-def downloadMyriad():
+def downloadMyriad(reload):
         downloadMyriadFile('libmyriad.py')
         downloadMyriadFile('myriad.py')
         from libmyriad import ResultCode
         import myriad
-        importlib.reload(libmyriad)
-        importlib.reload(myriad)
+        if reload:
+                importlib.reload(libmyriad)
+                importlib.reload(myriad)
 
 def downloadMyriadFile(filename):
         r = requests.get(m_server + filename)
@@ -20,7 +21,7 @@ def downloadMyriadFile(filename):
         f.close()
 
 # Initial import of myriad script from github
-downloadMyriad()
+downloadMyriad(False)
 
 while(True):
 
@@ -28,7 +29,7 @@ while(True):
         result = myriad.runOnce()
 
         # Reload myriad script, in case it changed on the server
-        downloadMyriad()
+        downloadMyriad(True)
         myriad.loadConfig()
         break
 
