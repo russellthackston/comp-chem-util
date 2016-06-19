@@ -1,7 +1,7 @@
 import requests
 import importlib
-from libmyriad import ResultCode
-from myriad import Myriad
+import libmyriad
+import myriad
 
 class Bootstrap:
 
