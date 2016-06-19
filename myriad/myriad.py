@@ -14,7 +14,11 @@ class Myriad:
                 self.outputPOST = ""
                 self.cpus = 1
                 self.mem = 1
-        
+                self.displacements = ""
+                self.jobID = ""
+                self.jobGUID = ""
+                self.makeInputDatParameters = ""
+
         def loadEndpoints(self):
                 # Load the configuration values from file
                 f = open('config.txt')
@@ -35,7 +39,7 @@ class Myriad:
                 if r.status_code == 200:
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
-                                print("Good response: " + str(r.text))
+                                print("Good response:\n" + str(r.text))
                                 self.parseJob(r.text)
                         else:
                                 # logic error
@@ -51,6 +55,22 @@ class Myriad:
                 #    # MakeInputDatParameters: -t MTc
                 #    -1,1,-2
                 print("Parsing job")
+                for line in job:
+                        if line.strip() == '':
+                                pass
+                        elif line.strip().startswith('#'):
+                                if "JobID:" in line.strip():
+                                        self.jobID = line.split(':')[1].strip()
+                                        print('JobID set to ' + str(self.jobID))
+                                elif "JobGUID:" in line.strip():
+                                        self.jobGUID = line.split(':')[1].strip()
+                                        print('JobGUID set to ' + str(self.jobGUID))
+                                elif "MakeInputDatParameters:" in line.strip():
+                                        self.makeInputDatParameters = line.split(':')[1].strip()
+                                        print('MakeInputDatParameters set to ' + str(self.makeInputDatParameters))
+                        else:
+                                # Non-blank, non-commented line. Must be the displacements
+                                self.displacements = line
                 print(job)
 
         def getSystemSpecs(self):
@@ -73,6 +93,7 @@ class Myriad:
                 pass
 
         def clearScratch(self):
+                print("Clearing the scratch folder. Some errors are normal.")
                 folder = os.environ['PSI_SCRATCH']
                 for the_file in os.listdir(folder):
                         file_path = os.path.join(folder, the_file)
@@ -83,7 +104,7 @@ class Myriad:
                                         shutil.rmtree(file_path)
                         except Exception as e:
                              print(e)                
-                pass
+                print("Finished clearing the scratch folder.")
 
         # Main
         def runOnce(self):
