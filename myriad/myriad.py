@@ -3,6 +3,8 @@ import requests
 
 class Myriad:
         config = []
+        jobrunnerPOST = ""
+        outputPOST = ""
         
         def __init__(self):
                 config = []
@@ -14,7 +16,10 @@ class Myriad:
                 lines = f.readlines()
                 f.close()
                 for line in lines:
-                        print(line)
+                        if line.startswith('JobRunner_GET '):
+                                jobrunnerPOST = line.split(' ')[1]
+                        if line.startswith('Output_POST '):
+                                outputPOST = line.split(' ')[1]
                 
                 #   Get system specs
                 #   Configure psi4
