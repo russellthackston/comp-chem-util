@@ -1,29 +1,30 @@
 from libmyriad import ResultCode
 import requests
 
-config = []
+class Myriad:
+        config = []
 
-# Function: Load configuration from config.txt
-def loadConfig():
-        f = open('config.txt')
-        print(f.readline())
+        # Function: Load configuration from config.txt
+        def loadConfig():
+                f = open('config.txt')
+                print(f.readline())
 
-# Function: Upload results to web service
+        # Function: Upload results to web service
 
-# Function: Start psi4 job
+        # Function: Start psi4 job
 
-# Main
-def runOnce():
-        return ResultCode.success
+        # Main
+        def runOnce():
+                return ResultCode.success
 
-# loadConfig
-# startJob
-# Loop:
-#   Get system specs
-#   Configure psi4
-#   Run psi4
-#   Check exit code
-#   Upload results
-#   Clear scratch
-#   Start new job
+        # loadConfig
+        # startJob
+        # Loop:
+        #   Get system specs
+        #   Configure psi4
+        #   Run psi4
+        #   Check exit code
+        #   Upload results
+        #   Clear scratch
+        #   Start new job
 
