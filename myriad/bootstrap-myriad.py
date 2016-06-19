@@ -28,7 +28,7 @@ class Bootstrap:
                         m = myriad.Myriad()
                         result = m.runOnce()
 
-                        if result != libmyriad.ResultCode.success:
+                        if result != libmyriad.ResultCode.abort:
                                 # Download a (potentially) updated copy of Myriad
                                 self.downloadMyriad()
 
