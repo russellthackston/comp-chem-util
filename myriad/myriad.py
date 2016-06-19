@@ -1,6 +1,7 @@
 from libmyriad import ResultCode
 import requests
 import multiprocessing
+import psutil
 
 class Myriad:
         config = []
