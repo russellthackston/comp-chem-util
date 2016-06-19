@@ -11,6 +11,7 @@ class Myriad:
         def loadConfig(self):
                 f = open('config.txt')
                 print(f.readline())
+                f.close()
 
         # Function: Upload results to web service
 

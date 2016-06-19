@@ -21,14 +21,17 @@ class Bootstrap:
                 f.close()
 
         def run(self):
-                while(True):
+                result = ResultCode.success
+                while(result != ResultCode.abort):
 
-                        # run myriad (once)
+                        # run a myriad job
                         m = myriad.Myriad()
                         result = m.runOnce()
 
-                        # Reload myriad script, in case it changed on the server
-                        self.downloadMyriad()
+                        if result != ResultCode.success:
+                                # Download a (potentially) updated copy of Myriad
+                                self.downloadMyriad()
+
                         break
 
 b = Bootstrap()
