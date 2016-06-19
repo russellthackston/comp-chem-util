@@ -3,6 +3,9 @@ import requests
 
 class Myriad:
         config = []
+        
+        def __init__(self):
+                config = []
 
         # Function: Load configuration from config.txt
         def loadConfig(self):

@@ -1,35 +1,40 @@
 import requests
 import importlib
 
-m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
+class Bootstrap:
 
-def downloadMyriad(self, reload):
-        downloadMyriadFile('libmyriad.py')
-        downloadMyriadFile('myriad.py')
-        from libmyriad import ResultCode
-        from myriad import Myriad
-        if reload:
-                importlib.reload(libmyriad)
-                importlib.reload(myriad)
+        m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
 
-def downloadMyriadFile(self, filename):
-        r = requests.get(m_server + filename)
-        f = open(filename, 'w')
-        f.write(r.text)
-        f.flush()
-        f.close()
+        def downloadMyriad(self, reload):
+                downloadMyriadFile('libmyriad.py')
+                downloadMyriadFile('myriad.py')
+                from libmyriad import ResultCode
+                from myriad import Myriad
+                if reload:
+                        importlib.reload(libmyriad)
+                        importlib.reload(myriad)
 
-# Initial import of myriad script from github
-downloadMyriad(False)
+        def downloadMyriadFile(self, filename):
+                r = requests.get(m_server + filename)
+                f = open(filename, 'w')
+                f.write(r.text)
+                f.flush()
+                f.close()
 
-while(True):
+        def run(self):
+                # Initial import of myriad script from github
+                downloadMyriad(False)
 
-        # run myriad (once)
-        myriad = Myriad()
-        result = myriad.runOnce()
+                while(True):
 
-        # Reload myriad script, in case it changed on the server
-        downloadMyriad(True)
-        myriad.loadConfig()
-        break
+                        # run myriad (once)
+                        myriad = Myriad()
+                        result = myriad.runOnce()
 
+                        # Reload myriad script, in case it changed on the server
+                        downloadMyriad(True)
+                        myriad.loadConfig()
+                        break
+
+b = Bootstrap()
+b.run()
