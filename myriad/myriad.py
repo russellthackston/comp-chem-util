@@ -1,4 +1,4 @@
-import lib-myriad
+import libmyriad
 import requests
 
 config = []
