@@ -1,3 +1,4 @@
+import lib-myriad
 import requests
 
 config = []
@@ -13,7 +14,8 @@ def loadConfig():
 
 # Main
 def runOnce():
-        pass
+        return ResultCode.success
+
 # loadConfig
 # startJob
 # Loop:

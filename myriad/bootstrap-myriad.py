@@ -1,23 +1,29 @@
 import requests
 import importlib
+from enum import Enum
 
-m_url = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/myriad.py'
+m_server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
 
 def downloadMyriad():
-        r = requests.get(m_url)
-        f = open('myriad.py', 'w')
+        downloadMyriadFile('lib-myriad.py')
+        downloadMyriadFile('myriad.py')
+
+def downloadMyriadFile(filename):
+        r = requests.get(m_server + filename)
+        f = open(filename, 'w')
         f.write(r.text)
         f.flush()
         f.close()
 
 # Initial import of myriad script from github
 downloadMyriad()
+import lib-myriad
 import myriad
 
 while(True):
 
         # run myriad (once)
-        myriad.runOnce()
+        result = myriad.runOnce()
 
         # Reload myriad script, in case it changed on the server
         downloadMyriad()
