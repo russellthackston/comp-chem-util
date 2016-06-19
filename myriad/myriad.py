@@ -7,14 +7,14 @@ import subprocess
 
 class Myriad:
         config = []
-        jobrunnerPOST = ""
+        jobrunnerGET = ""
         outputPOST = ""
         cpus = 1
         mem = 1
         
         def __init__(self):
                 config = []
-                jobrunnerPOST = ""
+                jobrunnerGET = ""
                 outputPOST = ""
                 cpus = 1
                 mem = 1
@@ -26,11 +26,25 @@ class Myriad:
                 f.close()
                 for line in lines:
                         if line.startswith('JobRunner_GET '):
-                                jobrunnerPOST = line.split(' ')[1].strip()
-                                print('JobRunner POST endpoint set to ' + jobrunnerPOST)
+                                jobrunnerGET = line.split(' ')[1].strip()
+                                print('JobRunner POST endpoint set to ' + jobrunnerGET)
                         if line.startswith('Output_POST '):
                                 outputPOST = line.split(' ')[1].strip()
                                 print('Output POST endpoint set to ' + outputPOST)
+
+        def getJob(self):
+                r = requests.get(self.jobrunnerGET)
+                # Check for good HTTP response
+                if r.status_code == 200:
+                        # Check for logically error in response
+                        if not "errorMessage" in r.text:
+                                print("Good response: " + str(r.text))
+                        else:
+                                # logic error
+                                print("Error from web service:\n" + str(r.text))
+                else:
+                        # HTTP error
+                        print("HTTP error: " + str(r.status_code))
 
         def getSystemSpecs(self):
                 cpus = psutil.cpu_count()
@@ -54,6 +68,7 @@ class Myriad:
         # Main
         def runOnce(self):
                 self.loadEndpoints()
+                self.getJob()
                 self.getSystemSpecs()
                 result = self.runPsi4()
                 if result == ResultCode.success:
