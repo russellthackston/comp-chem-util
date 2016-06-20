@@ -32,7 +32,8 @@ class Bootstrap:
                         if result == libmyriad.ResultCode.success:
                                 print('Job completed. Checking for another job.')
                         elif result == libmyriad.ResultCode.failure:
-                                print('Job failed. Checking for another job.')
+                                print('Job failed. Retrying in 10 seconds...')
+                                time.sleep(10)
                         elif result == libmyriad.ResultCode.noaction:
                                 print('No jobs found. Retrying in 60 seconds...')
                                 time.sleep(60)
