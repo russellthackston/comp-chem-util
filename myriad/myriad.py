@@ -136,7 +136,7 @@ class Myriad:
 
         def makeInputDat(self):
                 import makeInputDatFile
-                m = MakeInputDat()
+                m = makeInputDatFile.MakeInputDat()
                 m.makefile(self.makeInputDatParameters)
 
         # Main
