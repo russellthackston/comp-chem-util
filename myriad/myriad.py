@@ -42,7 +42,12 @@ class Myriad:
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
                                 print("Good response:\n" + str(r.text))
-                                return self.parseJob(r.text.split('\n'))
+                                result = self.parseJob(r.text.split('\n'))
+                                if result == ResultCode.success:
+                                        f = open('disp.dat', 'w')
+                                        w.write(self.displacements)
+                                        f.flush()
+                                        f.close()
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
