@@ -2,6 +2,7 @@ import requests
 import importlib
 import libmyriad
 import myriad
+import time
 
 class Bootstrap:
 
@@ -22,15 +23,22 @@ class Bootstrap:
 
         def run(self):
                 result = libmyriad.ResultCode.success
-                while(result != libmyriad.ResultCode.abort):
+                while(True):
 
                         # run a myriad job
                         m = myriad.Myriad()
                         result = m.runOnce()
 
-                        if result != libmyriad.ResultCode.abort:
-                                # Download a (potentially) updated copy of Myriad
-                                self.downloadMyriad()
+                        if result == libmyriad.ResultCode.success:
+                                print('Job completed. Checking for another job.')
+                        elif result == libmyriad.ResultCode.failure:
+                                print('Job failed. Checking for another job.')
+                        elif result == libmyriad.ResultCode.noaction:
+                                print('No jobs found. Retrying in 60 seconds...')
+                                time.sleep(60)
+
+                        # Download a (potentially) updated copy of Myriad
+                        self.downloadMyriad()
 
                         # Remove this after testing
                         break

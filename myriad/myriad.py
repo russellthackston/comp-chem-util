@@ -5,6 +5,7 @@ import psutil
 import os
 import subprocess
 import shutil
+import datetime
 
 class Myriad:
         
@@ -18,6 +19,7 @@ class Myriad:
                 self.jobID = ""
                 self.jobGUID = ""
                 self.makeInputDatParameters = ""
+                self.jobFolder = ""
 
         def loadEndpoints(self):
                 # Load the configuration values from file
@@ -40,16 +42,18 @@ class Myriad:
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
                                 print("Good response:\n" + str(r.text))
-                                self.parseJob(r.text)
+                                return self.parseJob(r.text)
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
+                                return ResultCode.failure
                 else:
                         # HTTP error
                         print("HTTP error: " + str(r.status_code))
+                        return ResultCode.failure
 
         def parseJob(self, job):
-                # Should look like this...
+                # The response should look something like this...
                 #    # JobID: 527
                 #    # JobGUID: b4af8ced-3661-11e6-a162-12fe8751cda9
                 #    # MakeInputDatParameters: -t MTc
@@ -72,6 +76,7 @@ class Myriad:
                                 # Non-blank, non-commented line. Must be the displacements
                                 self.displacements = line
                 print(job)
+                return ResultCode.success
 
         def getSystemSpecs(self):
                 self.cpus = psutil.cpu_count()
@@ -86,8 +91,26 @@ class Myriad:
                 self.mem = psutil.virtual_memory().available
                 print('Bytes of available memory ' + str(self.mem))
 
+        def recordDiskUsage(self):
+                myoutput = open('diskspace.out', 'w')
+                df = subprocess.Popen("df", stdout=myoutput)
+                myoutput.flush()
+                myoutput.close()
+
         def runPsi4(self):
-                return ResultCode.success
+                myoutput = open('psi4.out', 'w')
+                myerror = open('psi4.err', 'w')
+                p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
+                result = p.wait()
+                myoutput.flush()
+                myerror.flush()
+                myoutput.close()
+                myerror.close()
+                self.recordDiskUsage()
+                if result == 0:
+                        return ResultCode.success
+                else:
+                        return ResultCode.failure
 
         def uploadResults(self):
                 pass
@@ -106,14 +129,33 @@ class Myriad:
                              print(e)                
                 print("Finished clearing the scratch folder.")
 
+        def makeJobFolder(self):
+                self.jobFolder = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"+str(self.jobID))
+                os.mkdir(self.jobFolder)
+                os.chdir(self.jobFolder)
+
+        def closeJobFolder(self):
+                os.chdir("..")
+
+        def makeInputDat(self):
+                import makeInputDatFile
+                m = MakeInputDat()
+                m.makefile(self.makeInputDatParameters)
+
         # Main
         def runOnce(self):
                 self.loadEndpoints()
-                self.getJob()
-                self.getSystemSpecs()
-                self.clearScratch()
-                result = self.runPsi4()
-                if result == ResultCode.success:
-                        self.uploadResults()
-                self.clearScratch()
+                result = ResultCode.success
+                if self.getJob() == ResultCode.success:
+                        self.getSystemSpecs()
+                        self.clearScratch()
+                        self.makeJobFolder()
+                        self.makeInputDat()
+                        result = self.runPsi4()
+                        if result == ResultCode.success:
+                                self.uploadResults()
+                        self.closeJobFolder()
+                        self.clearScratch()
+                else:
+                        result = ResultCode.noaction
                 return result
