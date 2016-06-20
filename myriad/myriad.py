@@ -45,7 +45,7 @@ class Myriad:
                                 result = self.parseJob(r.text.split('\n'))
                                 if result == ResultCode.success:
                                         f = open('disp.dat', 'w')
-                                        w.write(self.displacements)
+                                        f.write(self.displacements)
                                         f.flush()
                                         f.close()
                         else:
