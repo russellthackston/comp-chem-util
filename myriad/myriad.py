@@ -60,6 +60,7 @@ class Myriad:
                 #    -1,1,-2
                 print("Parsing job")
                 for line in job:
+                        print('Parsing line: ' + line)
                         if line.strip() == '':
                                 pass
                         elif line.strip().startswith('#'):
@@ -72,10 +73,11 @@ class Myriad:
                                 elif "MakeInputDatParameters:" in line.strip():
                                         self.makeInputDatParameters = line.split(':')[1].strip()
                                         print('MakeInputDatParameters set to ' + str(self.makeInputDatParameters))
+                                else:
+                                        print('Unknown line')
                         else:
                                 # Non-blank, non-commented line. Must be the displacements
                                 self.displacements = line
-                print(job)
                 return ResultCode.success
 
         def getSystemSpecs(self):
@@ -83,11 +85,6 @@ class Myriad:
                 print('Number of cores set to ' + str(self.cpus))
                 os.environ["OMP_NUM_THREADS"] = str(self.cpus)
                 os.environ["MKL_NUM_THREADS"] = str(self.cpus)
-                myoutput = open('env.out', 'w')
-                p = subprocess.Popen("env", stdout=myoutput)
-                p.wait()
-                myoutput.flush()
-                myoutput.close()
                 self.mem = psutil.virtual_memory().available
                 print('Bytes of available memory ' + str(self.mem))
 
