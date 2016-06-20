@@ -42,7 +42,7 @@ class Myriad:
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
                                 print("Good response:\n" + str(r.text))
-                                return self.parseJob(r.text)
+                                return self.parseJob(r.text.split('\n'))
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
