@@ -74,7 +74,7 @@ class Myriad:
                                         self.makeInputDatParameters = line.split(':')[1].strip()
                                         print('MakeInputDatParameters set to ' + str(self.makeInputDatParameters))
                                 else:
-                                        print('Unknown line')
+                                        self.displacements = line.strip()
                         else:
                                 # Non-blank, non-commented line. Must be the displacements
                                 self.displacements = line
@@ -137,7 +137,7 @@ class Myriad:
         def makeInputDat(self):
                 import makeInputDatFile
                 m = makeInputDatFile.MakeInputDat()
-                m.makefile(self.makeInputDatParameters)
+                m.makefile(self.makeInputDatParameters, self.displacements)
 
         # Main
         def runOnce(self):
