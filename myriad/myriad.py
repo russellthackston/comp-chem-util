@@ -48,6 +48,7 @@ class Myriad:
                                         f.write(self.displacements)
                                         f.flush()
                                         f.close()
+                                return result
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
