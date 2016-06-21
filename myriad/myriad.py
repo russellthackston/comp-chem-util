@@ -127,7 +127,7 @@ class Myriad:
 
         def uploadResults(self):
                 print("Extracting results from output.dat")
-                energyLine = self.finalEnergy(open("output.dat", "r"))
+                energyLine = self.finalEnergy(open("output.dat", "br"))
                 print(energyLine)
                 print("Posting results to the web service at " + str(self.outputPOST))
                 r = requests.post(self.outputPOST)
