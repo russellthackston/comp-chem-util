@@ -127,10 +127,11 @@ class Myriad:
 
         def uploadResults(self):
                 print("Extracting results from output.dat")
-                energyLine = self.finalEnergy(open("output.dat", "br"))
-                print(energyLine)
+                energy = self.finalEnergy(open("output.dat", "br"))
+                print(energy)
                 print("Posting results to the web service at " + str(self.outputPOST))
-                r = requests.post(self.outputPOST)
+                p = { "jobGUID" : self.jobGUID }
+                r = requests.post(self.outputPOST, params=p, data=energy)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -174,6 +175,9 @@ class Myriad:
                                 if "CURRENT ENERGY" in line:
                                         found = True
                                         energy = line
+                if energy.strip() != "":
+                        e = energy.split(">")
+                        energy = e[1].strip()
                 return energy
     
         def clearScratch(self):
