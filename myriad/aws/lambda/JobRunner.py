@@ -32,7 +32,7 @@ def get(event, context):
     
     try:
         with conn.cursor() as cur:
-            sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults)GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID  ASC LIMIT 1"
+            sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults)GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID  ASC LIMIT 1"
             cur.execute(sql)
             for row in cur:
                 found = 1
@@ -41,6 +41,7 @@ def get(event, context):
                 result.jobDefinition = row[2]
                 result.created = row[3]
                 result.makeInputDatParameters = row[4]
+                result.jobGroup = row[5]
                 #print(row)
                 
             if 'source_ip' in event and event['source_ip'] != "" and found == 1:
@@ -68,8 +69,8 @@ def get(event, context):
     if found == 1:
         # Include the Job GUID, if we have one
         if jobGUID == "":
-            return '# JobID: ' + str(result.id) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n' + result.jobDefinition
+            return '# JobID: ' + str(result.id) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n# JobGroup: ' + str(result.jobGroup) + '\n' + result.jobDefinition
         else:
-            return '# JobID: ' + str(result.id) + '\n# JobGUID: ' + str(jobGUID) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n' + result.jobDefinition
+            return '# JobID: ' + str(result.id) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n# JobGroup: ' + str(result.jobGroup) + '\n# JobGUID: ' + str(jobGUID) + result.jobDefinition
     else:
         raise Exception('404: No jobs found')
