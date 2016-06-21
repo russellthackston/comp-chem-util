@@ -110,8 +110,56 @@ class Myriad:
                         return ResultCode.failure
 
         def uploadResults(self):
-                pass
+                print("Extracting results from output.dat")
+                energyLine = self.finalEnergy("output.dat")
+                print(energyLine)
+                print("Posting results to the web service at " + str(self.outputPOST))
+                r = requests.post(self.outputPOST)
+                # Check for good HTTP response
+                if r.status_code == 200:
+                        # Check for logical error in response
+                        if not "errorMessage" in r.text:
+                                print("Good response:\n" + str(r.text))
+                                return self.parseJob(r.text.split('\n'))
+                        else:
+                                # logic error
+                                print("Error from web service:\n" + str(r.text))
+                                return ResultCode.failure
+                else:
+                        # HTTP error
+                        print("HTTP error: " + str(r.status_code))
+                        return ResultCode.failure
 
+        # This function was shamelessly stolen from a StackOverflow answer and modified to
+        #   find the final energy value and return it.
+        # http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
+        def finalEnergy(self, f):
+                energy = ""
+                BLOCK_SIZE = 1024
+                f.seek(0, 2)
+                block_end_byte = f.tell()
+                block_number = -1
+                blocks = [] # blocks of size BLOCK_SIZE, in reverse order starting
+                            # from the end of the file
+                found = False
+                while block_end_byte > 0 and not found:
+                        if (block_end_byte - BLOCK_SIZE > 0):
+                                # read the last block we haven't yet read
+                                f.seek(block_number*BLOCK_SIZE, 2)
+                                blocks.extend(f.read(BLOCK_SIZE).decode("utf-8").split("\n"))
+                        else:
+                                # file too small, start from begining
+                                f.seek(0,0)
+                                # only read what was not read
+                                blocks.extend(f.read(block_end_byte).decode("utf-8").split('\n'))
+                        block_end_byte -= BLOCK_SIZE
+                        block_number -= 1
+                        for line in block:
+                                if "CURRENT ENERGY" in line:
+                                        found = True
+                                        energy = line
+                return energy
+    
         def clearScratch(self):
                 print("Clearing the scratch folder. Some errors are normal.")
                 folder = os.environ['PSI_SCRATCH']
