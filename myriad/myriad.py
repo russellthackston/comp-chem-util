@@ -13,11 +13,13 @@ class Myriad:
                 self.config = []
                 self.jobrunnerGET = ""
                 self.outputPOST = ""
+                self.myriadAWS = ""
                 self.cpus = 1
                 self.mem = 1
                 self.displacements = ""
                 self.jobID = ""
                 self.jobGUID = ""
+                self.jobGroup = ""
                 self.makeInputDatParameters = ""
                 self.jobFolder = ""
 
@@ -30,9 +32,12 @@ class Myriad:
                         if line.startswith('JobRunner_GET '):
                                 self.jobrunnerGET = line.split(' ')[1].strip()
                                 print('JobRunner GET endpoint set to ' + self.jobrunnerGET)
-                        if line.startswith('Output_POST '):
+                        elif line.startswith('Output_POST '):
                                 self.outputPOST = line.split(' ')[1].strip()
                                 print('Output POST endpoint set to ' + self.outputPOST)
+                        elif line.startswith('Myriad_AWS '):
+                                self.myriadAWS = line.split(' ')[1].strip()
+                                print('Myriad AWS endpoint set to ' + self.myriadAWS)
 
         def getJob(self):
                 print("Requesting a new job from " + str(self.jobrunnerGET))
@@ -70,6 +75,9 @@ class Myriad:
                                 elif "JobGUID:" in line.strip():
                                         self.jobGUID = line.split(':')[1].strip()
                                         print('JobGUID set to ' + str(self.jobGUID))
+                                elif "JobGroup:" in line.strip():
+                                        self.jobGroup = line.split(':')[1].strip()
+                                        print('JobGroup set to ' + str(self.jobGroup))
                                 elif "MakeInputDatParameters:" in line.strip():
                                         self.makeInputDatParameters = line.split(':')[1].strip()
                                         print('MakeInputDatParameters set to ' + str(self.makeInputDatParameters))
@@ -79,6 +87,14 @@ class Myriad:
                                 # Non-blank, non-commented line. Must be the displacements
                                 self.displacements = line
                 return ResultCode.success
+
+        def getJobSupportFiles(self):
+                # download job-specific script(s) to the parent folder
+                r = requests.get(self.myriadAWS + "/" + self.jobGroup + "/makeInputDatFile.py")
+                f = open("makeInputDatFile.py", "w")
+                f.write(r.text)
+                f.flush()
+                f.close()
 
         def getSystemSpecs(self):
                 self.cpus = psutil.cpu_count()
@@ -183,15 +199,23 @@ class Myriad:
                 os.chdir("..")
 
         def makeInputDat(self):
+                # Creates the input.dat file in the job folder
                 import makeInputDatFile
                 m = makeInputDatFile.MakeInputDat()
                 m.makefile(self.makeInputDatParameters, self.displacements)
+                # Append print_variables() call as a preventive measure, since that is
+                #    where we get the final energy value.
+                f = open("input.dat", "a")
+                f.write("\nprint_variables()\n")
+                f.flush()
+                f.close()
 
         # Main
         def runOnce(self):
                 self.loadEndpoints()
                 result = ResultCode.success
                 if self.getJob() == ResultCode.success:
+                        self.getJobSupportFiles()
                         self.getSystemSpecs()
                         self.clearScratch()
                         self.makeJobFolder()
