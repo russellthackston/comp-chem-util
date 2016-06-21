@@ -170,7 +170,7 @@ class Myriad:
                                 blocks.extend(f.read(block_end_byte).decode("utf-8").split('\n'))
                         block_end_byte -= BLOCK_SIZE
                         block_number -= 1
-                        for line in block:
+                        for line in blocks:
                                 if "CURRENT ENERGY" in line:
                                         found = True
                                         energy = line
