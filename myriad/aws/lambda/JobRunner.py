@@ -71,6 +71,6 @@ def get(event, context):
         if jobGUID == "":
             return '# JobID: ' + str(result.id) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n# JobGroup: ' + str(result.jobGroup) + '\n' + result.jobDefinition
         else:
-            return '# JobID: ' + str(result.id) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n# JobGroup: ' + str(result.jobGroup) + '\n# JobGUID: ' + str(jobGUID) + result.jobDefinition
+            return '# JobID: ' + str(result.id) + '\n# MakeInputDatParameters: ' + str(result.makeInputDatParameters) + '\n# JobGroup: ' + str(result.jobGroup) + '\n# JobGUID: ' + str(jobGUID) + "\n" + result.jobDefinition
     else:
         raise Exception('404: No jobs found')

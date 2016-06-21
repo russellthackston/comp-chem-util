@@ -127,7 +127,7 @@ class Myriad:
 
         def uploadResults(self):
                 print("Extracting results from output.dat")
-                energyLine = self.finalEnergy("output.dat")
+                energyLine = self.finalEnergy(open("output.dat", "r"))
                 print(energyLine)
                 print("Posting results to the web service at " + str(self.outputPOST))
                 r = requests.post(self.outputPOST)
@@ -209,6 +209,7 @@ class Myriad:
                 f.write("\nprint_variables()\n")
                 f.flush()
                 f.close()
+                # TODO: Adjust memory value in input.dat
 
         # Main
         def runOnce(self):
