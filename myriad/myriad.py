@@ -206,7 +206,7 @@ class Myriad:
                 # Creates the input.dat file in the job folder
                 from jobConfig import JobConfig
                 j = JobConfig()
-                intder = j.intder(self.makeInputDatParameters, self.displacements)
+                intder = j.intderIn(self.makeInputDatParameters, self.displacements)
                 
                 # Run Intder2005 to produce the geometries
                 print("Running Intder2005...")
