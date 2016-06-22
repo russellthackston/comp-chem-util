@@ -206,7 +206,7 @@ class Myriad:
                 # Creates the input.dat file in the job folder
                 from jobConfig import JobConfig
                 j = JobConfig()
-                intder = j.intderIn(self.makeInputDatParameters, self.displacements)
+                intder = j.intderIn(self.displacements)
                 f = open('intder.in', 'w')
                 f.write(intder)
                 f.flush()
@@ -228,7 +228,7 @@ class Myriad:
                 f = open('file07')
                 file07 = f.readlines()
                 f.close
-                inputdat = j.inputDat(file07)
+                inputdat = j.inputDat(self.makeInputDatParameters, file07)
 
                 # Adjust memory value in input.dat
                 print("Adjusting memory value in input.dat...")
