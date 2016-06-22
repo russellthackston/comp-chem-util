@@ -207,12 +207,17 @@ class Myriad:
                 from jobConfig import JobConfig
                 j = JobConfig()
                 intder = j.intderIn(self.makeInputDatParameters, self.displacements)
+                f.open('intder.in', 'w')
+                f.write(intder)
+                f.flush()
+                f.close()
+                
                 
                 # Run Intder2005 to produce the geometries
                 print("Running Intder2005...")
+                myinput = open('intder.in')
                 myoutput = open('intder.out', 'w')
-                p = subprocess.Popen("Intder2005.x", stdin=subprocess.PIPE, stdout=myoutput)
-                p.communicate(intder)
+                p = subprocess.Popen("Intder2005.x", stdin=myinput, stdout=myoutput)
                 p.wait()
                 myoutput.flush()
                 myoutput.close()
