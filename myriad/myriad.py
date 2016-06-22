@@ -207,7 +207,7 @@ class Myriad:
                 from jobConfig import JobConfig
                 j = JobConfig()
                 intder = j.intderIn(self.makeInputDatParameters, self.displacements)
-                f.open('intder.in', 'w')
+                f = open('intder.in', 'w')
                 f.write(intder)
                 f.flush()
                 f.close()
