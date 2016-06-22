@@ -204,16 +204,47 @@ class Myriad:
 
         def makeInputDat(self):
                 # Creates the input.dat file in the job folder
-                import makeInputDatFile
-                m = makeInputDatFile.MakeInputDat()
-                m.makefile(self.makeInputDatParameters, self.displacements)
+                from jobConfig import JobConfig
+                j = JobConfig()
+                intder = j.intder(self.makeInputDatParameters, self.displacements)
+                
+                # Run Intder2005 to produce the geometries
+                print("Running Intder2005...")
+                myoutput = open('intder.out', 'w')
+                p = subprocess.Popen("Intder2005.x", stdin=subprocess.PIPE, stdout=myoutput)
+                p.communicate(intder)
+                p.wait()
+                myoutput.flush()
+                myoutput.close()
+                print("Finished running Intder2005...")
+
+                # Read the intder output and produce an input.dat file from the geometries
+                print("Reading file07...")
+                f = open('file07')
+                file07 = f.readlines()
+                f.close
+                inputdat = j.inputDat(file07)
+
+                # Adjust memory value in input.dat
+                print("Adjusting memory value in input.dat...")
+                newmem = "memory " + (self.mem / self.cpus)
+                memidx = -1
+                for idx, line in inputdat:
+                        if line.strip().lowercase().startswith("memory "):
+                                memidx = idx
+                                break
+                if memidx != -1:
+                        inputdat[memidx] = newmem
+
+                # Write input.dat contents to file
+                f=open('input.dat', 'w')
+                f.write(inputdat)
                 # Append print_variables() call as a preventive measure, since that is
                 #    where we get the final energy value.
-                f = open("input.dat", "a")
                 f.write("\nprint_variables()\n")
                 f.flush()
                 f.close()
-                # TODO: Adjust memory value in input.dat
+                print("File input.dat written to disk.")
 
         # Main
         def runOnce(self):
