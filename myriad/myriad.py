@@ -90,8 +90,8 @@ class Myriad:
 
         def getJobSupportFiles(self):
                 # download job-specific script(s) to the parent folder
-                r = requests.get(self.myriadAWS + "/" + self.jobGroup + "/makeInputDatFile.py")
-                f = open("makeInputDatFile.py", "w")
+                r = requests.get(self.myriadAWS + "/" + self.jobGroup + "/jobConfig.py")
+                f = open("jobConfig.py", "w")
                 f.write(r.text)
                 f.flush()
                 f.close()
