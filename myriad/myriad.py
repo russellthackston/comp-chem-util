@@ -234,10 +234,13 @@ class Myriad:
                 print("Adjusting memory value in input.dat...")
                 newmem = "memory " + str((self.mem / self.cpus)/1000000) + " MB"
                 memidx = -1
-                for idx, line in inputdat:
+                idx = 0
+                for line in inputdat:
                         if line.strip().lowercase().startswith("memory "):
                                 memidx = idx
                                 break
+                        else:
+                                idx += 1
                 if memidx != -1:
                         inputdat[memidx] = newmem
 
