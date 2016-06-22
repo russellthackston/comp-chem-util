@@ -236,7 +236,7 @@ class Myriad:
                 memidx = -1
                 idx = 0
                 for line in inputdat:
-                        if line.strip().lowercase().startswith("memory "):
+                        if line.strip().lower().startswith("memory "):
                                 memidx = idx
                                 break
                         else:
