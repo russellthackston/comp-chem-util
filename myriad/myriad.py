@@ -264,7 +264,7 @@ class Myriad:
                 d = ""
                 if result == True:
                         d = "Success"
-                else
+                else:
                         d = "Failure"
                 r = requests.post(self.jobrunnerPOST, params=p, data=d)
                 # Check for good HTTP response
