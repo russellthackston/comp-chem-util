@@ -293,7 +293,7 @@ class Myriad:
                         if result == ResultCode.success:
                                 self.uploadResults()
                         else:
-                                
+                                self.postJobResult(False)
                         self.closeJobFolder()
                         self.clearScratch()
                 else:
