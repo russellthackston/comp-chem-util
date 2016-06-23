@@ -38,6 +38,11 @@ class Bootstrap:
                                 print('No jobs found. Retrying in 60 seconds...')
                                 time.sleep(60)
 
+                        if os.path.isfile('myriad.halt'):
+                                return
+                        while os.path.isfile('myriad.pause'):
+                                sleep 300;
+
                         # Download a (potentially) updated copy of Myriad
                         self.downloadMyriad()
 
