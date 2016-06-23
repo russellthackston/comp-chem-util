@@ -12,6 +12,7 @@ class Myriad:
         def __init__(self):
                 self.config = []
                 self.jobrunnerGET = ""
+                self.jobrunnerPOST = ""
                 self.outputPOST = ""
                 self.myriadAWS = ""
                 self.cpus = 1
@@ -32,6 +33,9 @@ class Myriad:
                         if line.startswith('JobRunner_GET '):
                                 self.jobrunnerGET = line.split(' ')[1].strip()
                                 print('JobRunner GET endpoint set to ' + self.jobrunnerGET)
+                        elif line.startswith('JobRunner_POST '):
+                                self.jobrunnerPOST = line.split(' ')[1].strip()
+                                print('JobRunner POST endpoint set to ' + self.jobrunnerPOST)
                         elif line.startswith('Output_POST '):
                                 self.outputPOST = line.split(' ')[1].strip()
                                 print('Output POST endpoint set to ' + self.outputPOST)
@@ -254,6 +258,27 @@ class Myriad:
                 f.close()
                 print("File input.dat written to disk.")
 
+        def postJobResult(self, result):
+                print("Posting job results to " + str(self.jobrunnerPOST))
+                p = { "jobGUID" : self.jobGUID }
+                d = ""
+                if result == True:
+                        d = "Success"
+                else
+                        d = "Failure"
+                r = requests.post(self.jobrunnerPOST, params=p, data=d)
+                # Check for good HTTP response
+                if r.status_code == 200:
+                        # Check for logical error in response
+                        if not "errorMessage" in r.text:
+                                print("Good response:\n" + str(r.text))
+                        else:
+                                # logic error
+                                print("Error from web service:\n" + str(r.text))
+                else:
+                        # HTTP error
+                        print("HTTP error: " + str(r.status_code))
+
         # Main
         def runOnce(self):
                 self.loadEndpoints()
@@ -267,6 +292,8 @@ class Myriad:
                         result = self.runPsi4()
                         if result == ResultCode.success:
                                 self.uploadResults()
+                        else:
+                                
                         self.closeJobFolder()
                         self.clearScratch()
                 else:
