@@ -6,15 +6,14 @@ import os
 import subprocess
 import shutil
 import datetime
+import json
 
 class Myriad:
         
         def __init__(self):
                 self.config = []
-                self.jobrunnerGET = ""
-                self.jobrunnerPOST = ""
-                self.outputPOST = ""
-                self.myriadAWS = ""
+                self.maestroAPIGateway = ""
+                self.myriadJobsFolderOnAWS = ""
                 self.cpus = 1
                 self.mem = 1
                 self.displacements = ""
@@ -30,22 +29,16 @@ class Myriad:
                 lines = f.readlines()
                 f.close()
                 for line in lines:
-                        if line.startswith('JobRunner_GET '):
-                                self.jobrunnerGET = line.split(' ')[1].strip()
-                                print('JobRunner GET endpoint set to ' + self.jobrunnerGET)
-                        elif line.startswith('JobRunner_POST '):
-                                self.jobrunnerPOST = line.split(' ')[1].strip()
-                                print('JobRunner POST endpoint set to ' + self.jobrunnerPOST)
-                        elif line.startswith('Output_POST '):
-                                self.outputPOST = line.split(' ')[1].strip()
-                                print('Output POST endpoint set to ' + self.outputPOST)
+                        if line.startswith('Maestro_api_gateway '):
+                                self.maestroAPIGateway = line.split(' ')[1].strip()
+                                print('JobRunner GET endpoint set to ' + self.maestroAPIGateway)
                         elif line.startswith('Myriad_AWS '):
-                                self.myriadAWS = line.split(' ')[1].strip()
-                                print('Myriad AWS endpoint set to ' + self.myriadAWS)
+                                self.myriadJobsFolderOnAWS = line.split(' ')[1].strip()
+                                print('Myriad AWS endpoint set to ' + self.myriadJobsFolderOnAWS)
 
         def getJob(self):
-                print("Requesting a new job from " + str(self.jobrunnerGET))
-                r = requests.get(self.jobrunnerGET)
+                print("Requesting a new job from " + str(self.maestroAPIGateway))
+                r = requests.get(self.maestroAPIGateway)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -94,7 +87,7 @@ class Myriad:
 
         def getJobSupportFiles(self):
                 # download job-specific script(s) to the parent folder
-                r = requests.get(self.myriadAWS + "/" + self.jobGroup + "/jobConfig.py")
+                r = requests.get(self.myriadJobsFolderOnAWS + "/" + self.jobGroup + "/jobConfig.py")
                 f = open("jobConfig.py", "w")
                 f.write(r.text)
                 f.flush()
@@ -118,7 +111,14 @@ class Myriad:
                 myoutput = open('psi4.out', 'w')
                 myerror = open('psi4.err', 'w')
                 p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
-                result = p.wait()
+                waiting = True
+                while waiting:
+                        try:
+                                result = p.wait(120)
+                                waiting = False
+                        except subprocess.TimeoutExpired:
+                                waiting = True
+                                self.postJobStatus("Success")
                 myoutput.flush()
                 myerror.flush()
                 myoutput.close()
@@ -133,9 +133,11 @@ class Myriad:
                 print("Extracting results from output.dat")
                 energy = self.finalEnergy(open("output.dat", "br"))
                 print(energy)
-                print("Posting results to the web service at " + str(self.outputPOST))
+                print("Posting results to the web service at " + str(self.maestroAPIGateway))
+                n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 p = { "jobGUID" : self.jobGUID }
-                r = requests.post(self.outputPOST, params=p, data=energy)
+                j = { "completed" : n, "jobResults" : energy }
+                r = requests.post(self.maestroAPIGateway, params=p, json=j)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -227,26 +229,16 @@ class Myriad:
                 myoutput.close()
                 print("Finished running Intder2005...")
 
+                # Adjust memory value in input.dat
+                print("Calculating memory value for input.dat...")
+                newmem = "memory " + str(int((self.mem / self.cpus)/1000000)) + " MB"
+
                 # Read the intder output and produce an input.dat file from the geometries
                 print("Reading file07...")
                 f = open('file07')
                 file07 = f.readlines()
                 f.close
-                inputdat = j.inputDat(self.makeInputDatParameters, file07)
-
-                # Adjust memory value in input.dat
-                print("Adjusting memory value in input.dat...")
-                newmem = "memory " + str((self.mem / self.cpus)/1000000) + " MB"
-                memidx = -1
-                idx = 0
-                for line in inputdat:
-                        if line.strip().lower().startswith("memory "):
-                                memidx = idx
-                                break
-                        else:
-                                idx += 1
-                if memidx != -1:
-                        inputdat[memidx] = newmem
+                inputdat = j.inputDat(self.makeInputDatParameters, file07, newmem)
 
                 # Write input.dat contents to file
                 f=open('input.dat', 'w')
@@ -258,15 +250,21 @@ class Myriad:
                 f.close()
                 print("File input.dat written to disk.")
 
-        def postJobResult(self, result):
-                print("Posting job results to " + str(self.jobrunnerPOST))
+        def postJobStatus(self, status):
+                '''
+                {
+                        "lastUpdate":"2016-06-26 17:31:38",
+                        "status":"Success"
+                }
+                '''
+                n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print("Posting job status to " + str(self.maestroAPIGateway))
                 p = { "jobGUID" : self.jobGUID }
-                d = ""
-                if result == True:
-                        d = "Success"
+                if status == True:
+                        j = {"lastUpdate":n,"status":"Success"}
                 else:
-                        d = "Failure"
-                r = requests.post(self.jobrunnerPOST, params=p, data=d)
+                        j = {"lastUpdate":n,"status":"Failure"}
+                r = requests.put(self.maestroAPIGateway, params=p, json=j)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -293,7 +291,7 @@ class Myriad:
                         if result == ResultCode.success:
                                 self.uploadResults()
                         else:
-                                self.postJobResult(False)
+                                self.postJobStatus(False)
                         self.closeJobFolder()
                         self.clearScratch()
                 else:

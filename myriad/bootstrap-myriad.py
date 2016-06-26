@@ -41,7 +41,7 @@ class Bootstrap:
                         if os.path.isfile('myriad.halt'):
                                 return
                         while os.path.isfile('myriad.pause'):
-                                sleep 300;
+                                time.sleep(5)
 
                         # Download a (potentially) updated copy of Myriad
                         self.downloadMyriad()
