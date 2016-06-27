@@ -39,9 +39,11 @@ class Myriad:
         def getJob(self, jobGroup=None):
                 print("Requesting a new job from " + str(self.maestroAPIGateway))
                 if jobGroup != None:
+                        print("Job group set to " + str(jobGroup))
                         p = {"jobGroup": jobGroup}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 else:
+                        print("No job group specified")
                         r = requests.get(self.maestroAPIGateway)
                 # Check for good HTTP response
                 if r.status_code == 200:
@@ -287,9 +289,10 @@ class Myriad:
 
         # Main
         def runOnce(self, jobGroup=None):
+                print("Job group = " + str(jobGroup))
                 self.loadEndpoints()
                 result = ResultCode.success
-                if self.getJob(self.jobGroup) == ResultCode.success:
+                if self.getJob(jobGroup) == ResultCode.success:
                         self.getJobSupportFiles()
                         self.getSystemSpecs()
                         self.clearScratch()
