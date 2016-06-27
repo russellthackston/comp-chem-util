@@ -8,6 +8,9 @@ import sys
 class Bootstrap:
 
         server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
+        
+        def __init__(self):
+                pass
 
         def downloadMyriad(self):
                 self.downloadMyriadFile('libmyriad.py')
@@ -50,6 +53,9 @@ class Bootstrap:
 
 jobGroup=None
 if len(sys.argv) > 1:
+        print("Found job group parameter")
         jobGroup=sys.argv[1]
+else:
+        print("No job group parameter provided")
 b = Bootstrap()
 b.run(jobGroup)
