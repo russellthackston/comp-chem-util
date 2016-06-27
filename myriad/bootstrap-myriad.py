@@ -23,6 +23,7 @@ class Bootstrap:
                 f.close()
 
         def run(self, jobGroup=None):
+                print("Job group = " + str(jobGroup))
                 result = libmyriad.ResultCode.success
                 while(True):
 
