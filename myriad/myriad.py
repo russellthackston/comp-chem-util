@@ -36,9 +36,13 @@ class Myriad:
                                 self.myriadJobsFolderOnAWS = line.split(' ')[1].strip()
                                 print('Myriad AWS endpoint set to ' + self.myriadJobsFolderOnAWS)
 
-        def getJob(self):
+        def getJob(self, jobGroup=None):
                 print("Requesting a new job from " + str(self.maestroAPIGateway))
-                r = requests.get(self.maestroAPIGateway)
+                if jobGroup != None:
+                        p = {"jobGroup": jobGroup}
+                        r = requests.get(self.maestroAPIGateway, params=p)
+                else:
+                        r = requests.get(self.maestroAPIGateway)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -209,35 +213,39 @@ class Myriad:
                 os.chdir("..")
 
         def makeInputDat(self):
-                # Creates the input.dat file in the job folder
-                from jobConfig import JobConfig
-                j = JobConfig()
-                intder = j.intderIn(self.displacements)
-                f = open('intder.in', 'w')
-                f.write(intder)
-                f.flush()
-                f.close()
-                
-                
-                # Run Intder2005 to produce the geometries
-                print("Running Intder2005...")
-                myinput = open('intder.in')
-                myoutput = open('intder.out', 'w')
-                p = subprocess.Popen("Intder2005.x", stdin=myinput, stdout=myoutput)
-                p.wait()
-                myoutput.flush()
-                myoutput.close()
-                print("Finished running Intder2005...")
-
                 # Adjust memory value in input.dat
                 print("Calculating memory value for input.dat...")
                 newmem = "memory " + str(int((self.mem / self.cpus)/1000000)) + " MB"
 
-                # Read the intder output and produce an input.dat file from the geometries
-                print("Reading file07...")
-                f = open('file07')
-                file07 = f.readlines()
-                f.close
+                # Creates the input.dat file in the job folder
+                from jobConfig import JobConfig
+                j = JobConfig()
+                intder = j.intderIn(self.displacements)
+                if intder != None:
+                        f = open('intder.in', 'w')
+                        f.write(intder)
+                        f.flush()
+                        f.close()
+                
+                
+                        # Run Intder2005 to produce the geometries
+                        print("Running Intder2005...")
+                        myinput = open('intder.in')
+                        myoutput = open('intder.out', 'w')
+                        p = subprocess.Popen("Intder2005.x", stdin=myinput, stdout=myoutput)
+                        p.wait()
+                        myoutput.flush()
+                        myoutput.close()
+                        print("Finished running Intder2005...")
+
+                        # Read the intder output and produce an input.dat file from the geometries
+                        print("Reading file07...")
+                        f = open('file07')
+                        file07 = f.readlines()
+                        f.close
+                else:
+                        file07 = None
+
                 inputdat = j.inputDat(self.makeInputDatParameters, file07, newmem)
 
                 # Write input.dat contents to file
@@ -278,10 +286,10 @@ class Myriad:
                         print("HTTP error: " + str(r.status_code))
 
         # Main
-        def runOnce(self):
+        def runOnce(self, jobGroup=None):
                 self.loadEndpoints()
                 result = ResultCode.success
-                if self.getJob() == ResultCode.success:
+                if self.getJob(self.jobGroup) == ResultCode.success:
                         self.getJobSupportFiles()
                         self.getSystemSpecs()
                         self.clearScratch()

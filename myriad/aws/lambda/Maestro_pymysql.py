@@ -48,11 +48,20 @@ def get_next_job(event, context):
         result = Job()
         jobGUID = ""
         machineID = event['source_ip']
+        jobGroup = None
+        if 'jobGroup' in event:
+                if event['jobGroup'] != "":
+                        jobGroup = event['jobGroup']
         
         try:
                 with conn.cursor() as cur:
-                        sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults)GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID ASC LIMIT 1"
-                        cur.execute(sql)
+                        if jobGroup == None:
+                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults)GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID ASC LIMIT 1"
+                                cur.execute(sql)
+                        else:
+                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults) AND Jobs.JobGroup = %s GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID ASC LIMIT 1"
+                                cur.execute(sql, jobGroup)
+
                         found = False
                         for row in cur:
                                 found = True

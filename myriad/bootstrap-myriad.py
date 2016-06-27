@@ -21,13 +21,13 @@ class Bootstrap:
                 f.flush()
                 f.close()
 
-        def run(self):
+        def run(self, jobGroup=None):
                 result = libmyriad.ResultCode.success
                 while(True):
 
                         # run a myriad job
                         m = myriad.Myriad()
-                        result = m.runOnce()
+                        result = m.runOnce(jobGroup)
 
                         if result == libmyriad.ResultCode.success:
                                 print('Job completed. Checking for another job.')
@@ -46,5 +46,8 @@ class Bootstrap:
                         # Download a (potentially) updated copy of Myriad
                         self.downloadMyriad()
 
+jobGroup=None
+if len(sys.argv) > 1:
+        jobGroup=sys.argv[1]
 b = Bootstrap()
-b.run()
+b.run(jobGroup)
