@@ -4,6 +4,7 @@ import libmyriad
 import myriad
 import time
 import sys
+import os
 
 class Bootstrap:
 
