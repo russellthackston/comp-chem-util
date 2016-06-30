@@ -43,9 +43,9 @@ class Bootstrap:
                                 print('No jobs found. Retrying in 60 seconds...')
                                 time.sleep(60)
 
-                        if os.path.isfile('myriad.halt'):
+                        if os.path.isfile('die.myriad'):
                                 return
-                        while os.path.isfile('myriad.pause'):
+                        while os.path.isfile('pause.myriad'):
                                 time.sleep(5)
 
                         # Download a (potentially) updated copy of Myriad
