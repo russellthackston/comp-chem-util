@@ -54,8 +54,8 @@ class Bootstrap:
 
 jobGroup=None
 if len(sys.argv) > 1:
-        print("Found job group parameter")
         jobGroup=sys.argv[1]
+        print("Found job group parameter: " + jobGroup)
 else:
         print("No job group parameter provided")
 b = Bootstrap()
