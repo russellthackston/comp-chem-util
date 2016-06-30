@@ -248,7 +248,7 @@ class Myriad:
                 else:
                         file07 = None
 
-                inputdat = j.inputDat(self.makeInputDatParameters, file07, newmem)
+                inputdat = j.inputDat(newmem, self.makeInputDatParameters, file07)
 
                 # Write input.dat contents to file
                 f=open('input.dat', 'w')
