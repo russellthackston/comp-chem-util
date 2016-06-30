@@ -124,7 +124,7 @@ class Myriad:
                                 waiting = False
                         except subprocess.TimeoutExpired:
                                 waiting = True
-                                self.postJobStatus("Success")
+                                self.postJobStatus(True)
                 myoutput.flush()
                 myerror.flush()
                 myoutput.close()
