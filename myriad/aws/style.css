@@ -1,0 +1,27 @@
+tr.Placeholder {
+        background-color: #E0EEEE;
+}
+
+tr.Completed {
+        background-color: #7FFFD4;
+}
+
+tr.Started {
+        background-color: #FFC125;
+}
+
+tr.Failed {
+        background-color: #FF4040;
+}
+
+tr.Not_started {
+        background-color: white;
+}
+
+button#refresh {
+        position: fixed; top: 50px; right: 30px;
+}
+
+button#top {
+        position: fixed; bottom: 50px; right: 30px;
+}

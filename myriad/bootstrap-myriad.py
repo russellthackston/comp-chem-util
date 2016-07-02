@@ -1,10 +1,11 @@
-import requests
 import importlib
 import libmyriad
 import myriad
-import time
-import sys
 import os
+import requests
+import subprocess
+import sys
+import time
 
 class Bootstrap:
 
@@ -41,6 +42,9 @@ class Bootstrap:
                                 print('Job failed. Retrying in 10 seconds...')
                                 time.sleep(10)
                         elif result == libmyriad.ResultCode.noaction:
+                                if os.path.isfile('shutdown.myriad'):
+                                        print('No jobs found. Shutting down...')
+                                        subprocess.Popen("sudo shutdown -h now")
                                 print('No jobs found. Retrying in 60 seconds...')
                                 time.sleep(60)
 

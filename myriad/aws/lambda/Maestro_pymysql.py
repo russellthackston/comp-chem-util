@@ -56,10 +56,10 @@ def get_next_job(event, context):
         try:
                 with conn.cursor() as cur:
                         if jobGroup == None:
-                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults)GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID ASC LIMIT 1"
+                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM Executions) LIMIT 1"
                                 cur.execute(sql)
                         else:
-                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs LEFT JOIN Executions ON Jobs.JobID = Executions.JobID WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM JobResults) AND Jobs.JobGroup = %s GROUP BY Jobs.JobID ORDER BY COUNT(Executions.JobID), Jobs.JobID ASC LIMIT 1"
+                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM Executions) AND Jobs.JobGroup = %s LIMIT 1;"
                                 cur.execute(sql, jobGroup)
 
                         found = False
@@ -212,3 +212,53 @@ def post_job_results(event, context):
         finally:
                 conn.close()
         
+'''
+This function returns a list of jobs from the database, from which may be derived the job
+statuses. This function is directly available via the API Gateway.
+'''
+def get_jobs_details(event, context):
+        try:
+                conn = pymysql.connect(rds_host, user=username, passwd=password, db=db_name, connect_timeout=5)
+        except:
+                logger.error("ERROR: Unexpected error: Could not connect to MySql instance.")
+                sys.exit()
+
+        logger.info("SUCCESS: Connection to RDS mysql instance succeeded")
+        logger.info(event)
+
+        results = []
+        try:
+                with conn.cursor() as cur:
+                        sql = '''
+                                SELECT JobResultsID, MachineID, JobStatus, JobID, JobName, 
+                                JobDefinition, Created, MakeInputDatParameters, JobGroup,
+                                ExecutionID, JobStarted, ExecutionFailed, JobGUID, 
+                                LastUpdate, JobResultsID, JobResults, ResultsCollected
+                                FROM JobExecutionResultSummary
+                                '''
+                        cur.execute(sql)
+                        found = False
+                        for row in cur:
+                                found = True
+                                if row[6] != None:
+                                        created = row[6].strftime("%Y-%m-%d %H:%M:%S")
+                                else:
+                                        created = 'None'
+                                if row[10] != None:
+                                        jobStarted = row[10].strftime("%Y-%m-%d %H:%M:%S")
+                                else:
+                                        jobStarted = 'None'
+                                if row[13] != None:
+                                        lastUpdate = row[13].strftime("%Y-%m-%d %H:%M:%S")
+                                else:
+                                        lastUpdate = 'None'
+                                if row[16] != None:
+                                        collected = row[16].strftime("%Y-%m-%d %H:%M:%S")
+                                else:
+                                        collected = 'None'
+                                drow = { 'JobResultsID': str(row[0]), 'MachineID': str(row[1]), 'JobStatus': str(row[2]), 'JobID': str(row[3]), 'JobName': str(row[4]), 'JobDefinition': str(row[5]), 'Created' : str(created), 'MakeInputDatParameters': str(row[7]), 'JobGroup': str(row[8]), 'ExecutionID': str(row[9]), 'JobStarted': str(jobStarted), 'ExecutionFailed': str(row[11]), 'JobGUID': str(row[12]), 'LastUpdate': str(lastUpdate), 'JobResultsID': str(row[14]), 'JobResults': str(row[15]), 'ResultsCollected': str(collected) }
+                                results.append(drow)
+        finally:
+                conn.close()
+
+        return results

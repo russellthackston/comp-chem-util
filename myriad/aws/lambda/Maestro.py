@@ -109,32 +109,36 @@ def dequeue_job_status_results(event, context):
         logger.info("Getting a reference to lambda from boto3")
         lambda_client = boto3.client('lambda')
         
-        for message in queue.receive_messages(MaxNumberOfMessages=10):
-                logger.info("Processing message: " + message.body)
+        messages = queue.receive_messages(MaxNumberOfMessages=10)
+        
+        while messages is not None and len(messages) > 0:
+                for message in messages:
+                        logger.info("Processing message: " + message.body)
 
-                # {"jobResults": "-850.131671682245", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167", "completed": "2016-06-16 22:55:10"}
-                # {"status": "Success", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167"}
-                msg = json.loads(message.body)
-                logger.info(str(msg))
+                        # {"jobResults": "-850.131671682245", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167", "completed": "2016-06-16 22:55:10"}
+                        # {"status": "Success", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167"}
+                        msg = json.loads(message.body)
+                        logger.info(str(msg))
 
-                if 'jobResults' in msg:
-                        functionName = "MaestroPostJobResults"
-                elif 'status' in msg:
-                        functionName = "MaestroPostJobStatus"
+                        if 'jobResults' in msg:
+                                functionName = "MaestroPostJobResults"
+                        elif 'status' in msg:
+                                functionName = "MaestroPostJobStatus"
 
-                logger.info("Calling database Lambda function " + functionName)
-                response = lambda_client.invoke(FunctionName=functionName,
-                        InvocationType='Event',
-                        Payload=json.dumps(msg))
+                        logger.info("Calling database Lambda function " + functionName)
+                        response = lambda_client.invoke(FunctionName=functionName,
+                                InvocationType='Event',
+                                Payload=json.dumps(msg))
 
-                logger.info("Response: " + str(response))
+                        logger.info("Response: " + str(response))
                 
-                if int(response['StatusCode']) >= 200 and int(response['StatusCode']) < 300:
-                        logger.info("Success response from database Lambda function. Deleting message from SQS queue")
-                        message.delete()
-                elif 'status' in msg:
-                        # Ignore errors from posting status
-                        logger.info("Call to write to database Lambda 'Status' function failed. Deleting anyway.")
-                        message.delete()
-                else: 
-                        logger.info("Call to write to database Lambda function failed. Job results. Keeping message for retry.")
+                        if int(response['StatusCode']) >= 200 and int(response['StatusCode']) < 300:
+                                logger.info("Success response from database Lambda function. Deleting message from SQS queue")
+                                message.delete()
+                        elif 'status' in msg:
+                                # Ignore errors from posting status
+                                logger.info("Call to write to database Lambda 'Status' function failed. Deleting anyway.")
+                                message.delete()
+                        else: 
+                                logger.info("Call to write to database Lambda function failed. Job results. Keeping message for retry.")
+                messages = queue.receive_messages(MaxNumberOfMessages=10)

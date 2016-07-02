@@ -22,6 +22,7 @@ class Myriad:
                 self.jobGroup = ""
                 self.makeInputDatParameters = ""
                 self.jobFolder = ""
+                self.errors = []
 
         def loadEndpoints(self):
                 # Load the configuration values from file
@@ -137,8 +138,19 @@ class Myriad:
 
         def uploadResults(self):
                 print("Extracting results from output.dat")
-                energy = self.finalEnergy(open("output.dat", "br"))
-                print(energy)
+                f = open("output.dat", "r")
+                lines = f.readlines().reverse()
+                energy = None
+                for line in lines:
+                        if "CURRENT ENERGY" in line:
+                                energy = line.split(">")
+                                energy = energy[1].strip()
+                                break
+                f.close()
+                print("Energy = " + str(energy))
+                if energy == None:
+                        return ResultCode.failure
+
                 print("Posting results to the web service at " + str(self.maestroAPIGateway))
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 p = { "jobGUID" : self.jobGUID }
@@ -159,39 +171,6 @@ class Myriad:
                         print("HTTP error: " + str(r.status_code))
                         return ResultCode.failure
 
-        # This function was shamelessly stolen from a StackOverflow answer and modified to
-        #   find the final energy value and return it.
-        # http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
-        def finalEnergy(self, f):
-                energy = ""
-                BLOCK_SIZE = 1024
-                f.seek(0, 2)
-                block_end_byte = f.tell()
-                block_number = -1
-                blocks = [] # blocks of size BLOCK_SIZE, in reverse order starting
-                            # from the end of the file
-                found = False
-                while block_end_byte > 0 and not found:
-                        if (block_end_byte - BLOCK_SIZE > 0):
-                                # read the last block we haven't yet read
-                                f.seek(block_number*BLOCK_SIZE, 2)
-                                blocks.extend(f.read(BLOCK_SIZE).decode("utf-8").split("\n"))
-                        else:
-                                # file too small, start from begining
-                                f.seek(0,0)
-                                # only read what was not read
-                                blocks.extend(f.read(block_end_byte).decode("utf-8").split('\n'))
-                        block_end_byte -= BLOCK_SIZE
-                        block_number -= 1
-                        for line in blocks:
-                                if "CURRENT ENERGY" in line:
-                                        found = True
-                                        energy = line
-                if energy.strip() != "":
-                        e = energy.split(">")
-                        energy = e[1].strip()
-                return energy
-    
         def clearScratch(self):
                 print("Clearing the scratch folder. Some errors are normal.")
                 folder = os.environ['PSI_SCRATCH']
@@ -248,7 +227,10 @@ class Myriad:
                 else:
                         file07 = None
 
-                inputdat = j.inputDat(newmem, self.makeInputDatParameters, file07)
+                if len(self.errors) > 0:
+                        inputdat = j.inputDat(newmem, self.makeInputDatParameters, file07, self.errors[-1])
+                else:
+                        inputdat = j.inputDat(newmem, self.makeInputDatParameters, file07)
 
                 # Write input.dat contents to file
                 f=open('input.dat', 'w')
@@ -287,12 +269,50 @@ class Myriad:
                         # HTTP error
                         print("HTTP error: " + str(r.status_code))
 
+        def checkError(self):
+                f = open("output.dat", "r")
+                lines = f.readlines().reverse()
+                f.close()
+
+                error = None
+                for line in lines:
+                        if "Failed to converge." in line:
+                                error = "Failed to converge."
+                        elif error = "Failed to converge." and " iter " in line:
+                                # split the line into columns and only look at the Delta E value (fifth column)
+                                chunks = line.split(" ")
+                                chunks = filter(None, line.split(" "))
+                                if "e-12 " in chunks[4]:
+                                        error = "Failed to converge. (12)"
+                                if "e-13 " in chunks[4]:
+                                        error = "Failed to converge. (13)"
+                                break
+                return error
+
         # Main
-        def runOnce(self, jobGroup=None):
+        def runOnce(self, jobGroup=None, error=None):
                 print("Job group = " + str(jobGroup))
+
+                # if we have seen this error before, bail out.
+                # We couldn't fix it the first time. Why should this time be any different?
+                if error != None and error in self.errors:
+                        return ResultCode.failure
+                
+                # add the error condition to the stack of prior errors if we've never seen it before
+                if error != None:
+                        self.errors.append(error)
+
+                # run the job...
                 self.loadEndpoints()
-                result = ResultCode.success
-                if self.getJob(jobGroup) == ResultCode.success:
+
+                # if no error, get a new job.
+                # if there is an error code, we're going to re-run the job we have
+                if error == None:
+                        result = self.getJob(jobGroup)
+                else:
+                        result == ResultCode.success
+
+                if result == ResultCode.success:
                         self.getJobSupportFiles()
                         self.getSystemSpecs()
                         self.clearScratch()
@@ -303,8 +323,19 @@ class Myriad:
                                 self.uploadResults()
                         else:
                                 self.postJobStatus(False)
+
+                        # Check for known error situations in output.dat
+                        if result == ResultCode.failure:
+                                newerror = self.checkError()
+
                         self.closeJobFolder()
                         self.clearScratch()
+
+                        # if we encounter a known error, try the job again and compensate
+                        if newerror != None:
+                                result = self.runOnce(jobGroup, error)
+
                 else:
                         result = ResultCode.noaction
+
                 return result
