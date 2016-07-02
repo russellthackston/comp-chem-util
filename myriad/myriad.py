@@ -280,8 +280,8 @@ class Myriad:
                                 error = "Failed to converge."
                         elif error == "Failed to converge." and " iter " in line:
                                 # split the line into columns and only look at the Delta E value (fifth column)
-                                chunks = line.split(" ")
-                                chunks = filter(None, line.split(" "))
+                                chunks = line.split()
+                                
                                 if "e-12 " in chunks[4]:
                                         error = "Failed to converge. (12)"
                                 if "e-13 " in chunks[4]:
