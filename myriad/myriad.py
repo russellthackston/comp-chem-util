@@ -139,9 +139,9 @@ class Myriad:
         def uploadResults(self):
                 print("Extracting results from output.dat")
                 f = open("output.dat", "r")
-                lines = f.readlines().reverse()
+                lines = f.readlines()
                 energy = None
-                for line in lines:
+                for line in reversed(lines):
                         if "CURRENT ENERGY" in line:
                                 energy = line.split(">")
                                 energy = energy[1].strip()
@@ -271,11 +271,11 @@ class Myriad:
 
         def checkError(self):
                 f = open("output.dat", "r")
-                lines = f.readlines().reverse()
+                lines = f.readlines()
                 f.close()
 
                 error = None
-                for line in lines:
+                for line in reversed(lines):
                         if "Failed to converge." in line:
                                 error = "Failed to converge."
                         elif error == "Failed to converge." and " iter " in line:
