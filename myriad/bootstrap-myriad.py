@@ -42,6 +42,7 @@ class Bootstrap:
                                 print('Job failed. Retrying in 10 seconds...')
                                 time.sleep(10)
                         elif result == libmyriad.ResultCode.noaction:
+                                # this file should be created by the start-up script or manually by the user
                                 if os.path.isfile('shutdown.myriad'):
                                         print('No jobs found. Shutting down...')
                                         subprocess.Popen("sudo shutdown -h now")
