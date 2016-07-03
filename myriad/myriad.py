@@ -300,10 +300,10 @@ class Myriad:
                                 # split the line into columns and only look at the Delta E value (fifth column)
                                 chunks = line.split()
                                 
-                                if "e-12 " in chunks[4]:
+                                if "e-12" in chunks[4]:
                                         print("Found a 'Failed to converge. (12)' error")
                                         error = "Failed to converge. (12)"
-                                if "e-13 " in chunks[4]:
+                                if "e-13" in chunks[4]:
                                         print("Found a 'Failed to converge. (13)' error")
                                         error = "Failed to converge. (13)"
                                 break
