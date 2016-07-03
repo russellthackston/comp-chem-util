@@ -43,7 +43,10 @@ def queue_job_status(event, context):
         logger.info("Obtained SQS reference from boto3. Getting the queue")
         queue = sqs.get_queue_by_name(QueueName='MaestroSQSQueue')
         logger.info("Queue retrieved. Sending message")
-        msg = json.dumps({ "jobGUID" : jobGUID, "status" : status, "source_ip" : source_ip, "lastUpdate" : lastUpdate })
+        if 'message' in event:
+                msg = json.dumps({ "jobGUID" : jobGUID, "status" : status, "source_ip" : source_ip, "lastUpdate" : lastUpdate, "message" : event['message'] })
+        else:
+                msg = json.dumps({ "jobGUID" : jobGUID, "status" : status, "source_ip" : source_ip, "lastUpdate" : lastUpdate })
         logger.info(msg)
         response = queue.send_message(MessageBody=msg)
         
@@ -116,7 +119,7 @@ def dequeue_job_status_results(event, context):
                         logger.info("Processing message: " + message.body)
 
                         # {"jobResults": "-850.131671682245", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167", "completed": "2016-06-16 22:55:10"}
-                        # {"status": "Success", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167"}
+                        # {"status": "Success", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167", "message" : "Hello" }
                         msg = json.loads(message.body)
                         logger.info(str(msg))
 

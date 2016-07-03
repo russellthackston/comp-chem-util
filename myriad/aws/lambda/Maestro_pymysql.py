@@ -119,6 +119,10 @@ def post_job_status(event, context):
         jobGUID = str(event['jobGUID'])
         status = str(event['status'])
         lastUpdate = str(event['lastUpdate'])
+        if 'message' in event:
+                message = str(event['message'])[:255]
+        else:
+                message = None
         logger.info(machineID)
         logger.info(jobGUID)
         logger.info(status)
@@ -133,8 +137,8 @@ def post_job_status(event, context):
         
         try:
                 with conn.cursor() as cur:
-                        sql = "UPDATE Executions SET ExecutionFailed = %s, LastUpdate = %s WHERE MachineID = %s AND JobGUID = %s"
-                        cur.execute(sql, (stat, lastUpdate, machineID, jobGUID))
+                        sql = "UPDATE Executions SET ExecutionFailed = %s, LastUpdate = %s, LastStatusMessage = %s WHERE MachineID = %s AND JobGUID = %s"
+                        cur.execute(sql, (stat, lastUpdate, machineID, message, jobGUID))
                         if cur.rowcount > 0:
                                 updated = True
                         conn.commit()

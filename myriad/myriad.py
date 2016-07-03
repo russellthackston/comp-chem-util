@@ -117,24 +117,32 @@ class Myriad:
         def runPsi4(self):
                 myoutput = open('psi4.out', 'w')
                 myerror = open('psi4.err', 'w')
-                p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
-                waiting = True
-                while waiting:
-                        try:
-                                result = p.wait(120)
-                                waiting = False
-                        except subprocess.TimeoutExpired:
-                                waiting = True
-                                self.postJobStatus(True)
-                myoutput.flush()
-                myerror.flush()
-                myoutput.close()
-                myerror.close()
-                self.recordDiskUsage()
-                if result == 0:
-                        return ResultCode.success
-                else:
+                try:
+                        p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
+                        waiting = True
+                        while waiting:
+                                try:
+                                        result = p.wait(120)
+                                        waiting = False
+                                except subprocess.TimeoutExpired:
+                                        waiting = True
+                                        self.postJobStatus(True)
+
+                        if result == 0:
+                                return ResultCode.success
+                        else:
+                                return ResultCode.failure
+
+                except RuntimeError as e:
+                        self.postJobStatus(True, str(e))
                         return ResultCode.failure
+
+                finally:
+                        myoutput.flush()
+                        myerror.flush()
+                        myoutput.close()
+                        myerror.close()
+                        self.recordDiskUsage()
 
         def uploadResults(self):
                 print("Extracting results from output.dat")
@@ -242,21 +250,23 @@ class Myriad:
                 f.close()
                 print("File input.dat written to disk.")
 
-        def postJobStatus(self, status):
-                '''
-                {
-                        "lastUpdate":"2016-06-26 17:31:38",
-                        "status":"Success"
-                }
-                '''
+        def postJobStatus(self, status, message=None):
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print("Posting job status to " + str(self.maestroAPIGateway))
                 p = { "jobGUID" : self.jobGUID }
                 if status == True:
-                        j = {"lastUpdate":n,"status":"Success"}
+                        statusStr = "Success"
                 else:
-                        j = {"lastUpdate":n,"status":"Failure"}
-                r = requests.put(self.maestroAPIGateway, params=p, json=j)
+                        statusStr = "Failure"
+                if message == None:
+                        j = {"lastUpdate":n,"status":statusStr}
+                else:
+                        j = {"lastUpdate":n,"status":statusStr,"message":message}
+                try:
+                        r = requests.put(self.maestroAPIGateway, params=p, json=j)
+                except:
+                        print("Error posting status. Ignoring.")
+                '''
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -268,6 +278,7 @@ class Myriad:
                 else:
                         # HTTP error
                         print("HTTP error: " + str(r.status_code))
+                '''
 
         def checkError(self):
                 f = open("output.dat", "r")
