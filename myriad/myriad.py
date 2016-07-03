@@ -334,6 +334,7 @@ class Myriad:
                         result == ResultCode.success
 
                 if result == ResultCode.success:
+                        newerror = None
                         self.getJobSupportFiles()
                         self.getSystemSpecs()
                         self.clearScratch()
@@ -355,7 +356,8 @@ class Myriad:
 
                         # if we encounter a known error, try the job again and compensate
                         if newerror != None:
-                                result = self.runOnce(jobGroup, error)
+                                print("Re-executing job due to known error: " + str(newerror))
+                                result = self.runOnce(jobGroup, newerror)
 
                 else:
                         result = ResultCode.noaction
