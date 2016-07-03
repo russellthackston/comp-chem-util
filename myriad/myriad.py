@@ -115,27 +115,30 @@ class Myriad:
                 myoutput.close()
 
         def runPsi4(self):
+                result = ResultCode.success
                 myoutput = open('psi4.out', 'w')
                 myerror = open('psi4.err', 'w')
+                exitcode = 0
                 try:
                         p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
                         waiting = True
                         while waiting:
                                 try:
-                                        result = p.wait(120)
+                                        exitcode = p.wait(120)
                                         waiting = False
                                 except subprocess.TimeoutExpired:
                                         waiting = True
                                         self.postJobStatus(True)
 
-                        if result == 0:
-                                return ResultCode.success
+                        print("psi4 exited with exit code of " + str(exitcode))
+                        if exitcode == 0:
+                                result = ResultCode.success
                         else:
-                                return ResultCode.failure
+                                result = ResultCode.failure
 
                 except RuntimeError as e:
                         self.postJobStatus(True, str(e))
-                        return ResultCode.failure
+                        result = ResultCode.failure
 
                 finally:
                         myoutput.flush()
@@ -143,6 +146,8 @@ class Myriad:
                         myoutput.close()
                         myerror.close()
                         self.recordDiskUsage()
+                        
+                return result
 
         def uploadResults(self):
                 print("Extracting results from output.dat")
@@ -281,6 +286,7 @@ class Myriad:
                 '''
 
         def checkError(self):
+                print("Opening output.dat...")
                 f = open("output.dat", "r")
                 lines = f.readlines()
                 f.close()
@@ -288,16 +294,20 @@ class Myriad:
                 error = None
                 for line in reversed(lines):
                         if "Failed to converge." in line:
+                                print("Found a 'Failed to converge.' error")
                                 error = "Failed to converge."
                         elif error == "Failed to converge." and " iter " in line:
                                 # split the line into columns and only look at the Delta E value (fifth column)
                                 chunks = line.split()
                                 
                                 if "e-12 " in chunks[4]:
+                                        print("Found a 'Failed to converge. (12)' error")
                                         error = "Failed to converge. (12)"
                                 if "e-13 " in chunks[4]:
+                                        print("Found a 'Failed to converge. (13)' error")
                                         error = "Failed to converge. (13)"
                                 break
+                print("Returning error: " + str(error))
                 return error
 
         # Main
@@ -331,13 +341,14 @@ class Myriad:
                         self.makeInputDat()
                         result = self.runPsi4()
                         if result == ResultCode.success:
+                                print("runPsi4() returned success code")
                                 self.uploadResults()
                         else:
+                                print("runPsi4() returned failure code. Checking for known errors")
                                 self.postJobStatus(False)
-
-                        # Check for known error situations in output.dat
-                        if result == ResultCode.failure:
+                                # Check for known error situations in output.dat
                                 newerror = self.checkError()
+                                print("CheckError() result: " + str(newerror))
 
                         self.closeJobFolder()
                         self.clearScratch()
