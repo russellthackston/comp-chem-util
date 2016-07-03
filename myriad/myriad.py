@@ -331,7 +331,7 @@ class Myriad:
                 if error == None:
                         result = self.getJob(jobGroup)
                 else:
-                        result == ResultCode.success
+                        result = ResultCode.success
 
                 if result == ResultCode.success:
                         newerror = None
