@@ -128,7 +128,7 @@ class Myriad:
                                         waiting = False
                                 except subprocess.TimeoutExpired:
                                         waiting = True
-                                        self.postJobStatus(True)
+                                        self.postJobStatus(True, "Running")
 
                         print("psi4 exited with exit code of " + str(exitcode))
                         if exitcode == 0:
@@ -137,7 +137,7 @@ class Myriad:
                                 result = ResultCode.failure
 
                 except RuntimeError as e:
-                        self.postJobStatus(True, str(e))
+                        self.postJobStatus(False, str(e))
                         result = ResultCode.failure
 
                 finally:
@@ -317,6 +317,7 @@ class Myriad:
                 # if we have seen this error before, bail out.
                 # We couldn't fix it the first time. Why should this time be any different?
                 if error != None and error in self.errors:
+                        self.postJobStatus(False, "Error repeated: " + str(error))
                         return ResultCode.failure
                 
                 # add the error condition to the stack of prior errors if we've never seen it before
@@ -345,10 +346,10 @@ class Myriad:
                                 print("runPsi4() returned success code")
                                 self.uploadResults()
                         else:
-                                print("runPsi4() returned failure code. Checking for known errors")
-                                self.postJobStatus(False)
                                 # Check for known error situations in output.dat
+                                print("runPsi4() returned failure code. Checking for known errors")
                                 newerror = self.checkError()
+                                self.postJobStatus(False, "PSI4 error: " + str(newerror))
                                 print("CheckError() result: " + str(newerror))
 
                         self.closeJobFolder()
