@@ -45,7 +45,9 @@ class Bootstrap:
                                 # this file should be created by the start-up script or manually by the user
                                 if os.path.isfile('shutdown.myriad'):
                                         print('No jobs found. Shutting down...')
-                                        subprocess.Popen("sudo shutdown -h now")
+                                        
+                                        command = "/sbin/shutdown -h now"
+                                        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
                                 print('No jobs found. Retrying in 60 seconds...')
                                 time.sleep(60)
 
