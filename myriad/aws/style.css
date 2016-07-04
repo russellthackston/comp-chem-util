@@ -18,7 +18,27 @@ tr.Not_started {
         background-color: white;
 }
 
-button#refresh {
+div.Placeholder {
+        background-color: #E0EEEE;
+}
+
+div.Completed {
+        background-color: #7FFFD4;
+}
+
+div.Started {
+        background-color: #FFC125;
+}
+
+div.Failed {
+        background-color: #FF4040;
+}
+
+div.Not_started {
+        background-color: white;
+}
+
+button#refreshfloat {
         position: fixed; top: 50px; right: 30px;
 }
 

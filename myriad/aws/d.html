@@ -4,15 +4,15 @@
                 <meta charset="utf-8">
                 <title>Maestro Dashboard</title>
                 <link rel="stylesheet" type="text/css" href="style.css">
+                <script src="scripts.js"></script>
         </head>
-        <body>
-                <button type="button" onclick="refreshTable()" id="refresh">Refresh</button>
+        <body onload="showDetails()">
                 <article id="main">
                         <table id="jobs" border="1" style="width:100%; height:100%">
                         </table>
                 </article>
+                <span id="decodeIt" style="display:none;"></span>
         </body>
-        <script src="scripts.js"></script>
 </html>
 
 
