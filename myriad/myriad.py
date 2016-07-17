@@ -1,12 +1,13 @@
 from libmyriad import ResultCode
-import requests
-import multiprocessing
-import psutil
-import os
-import subprocess
-import shutil
 import datetime
 import json
+import multiprocessing
+import os
+import psutil
+import requests
+import shutil
+import subprocess
+import time
 
 class Myriad:
         
@@ -55,12 +56,17 @@ class Myriad:
                 else:
                         print("No job group or sub group specified")
                         r = requests.get(self.maestroAPIGateway)
+
                 # Check for good HTTP response
                 if r.status_code == 200:
+                        print("*** Begin get job response ***")
+                        print(r.text)
+                        print("*** End get job response ***")
+
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
                                 print("Good response:\n" + str(r.text))
-                                return self.parseJob(r.text.split('\n'))
+                                return self.parseJob(r.text)
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
@@ -77,7 +83,7 @@ class Myriad:
                 #    # MakeInputDatParameters: -t MTc
                 #    -1,1,-2
                 print("Parsing job")
-                for line in job:
+                for line in job.split('\n'):
                         print('Parsing line: ' + line)
                         if line.strip() == '':
                                 pass
@@ -179,7 +185,8 @@ class Myriad:
                 f.close()
                 print("Energy = " + str(energy))
                 if energy == None:
-                        return ResultCode.failure
+                        print("No energy found")
+                        return ResultCode.noaction
 
                 print("Posting results to the web service at " + str(self.maestroAPIGateway))
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -191,7 +198,6 @@ class Myriad:
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
                                 print("Good response:\n" + str(r.text))
-                                return self.parseJob(r.text.split('\n'))
                         else:
                                 # logic error
                                 print("Error from web service:\n" + str(r.text))
@@ -363,7 +369,9 @@ class Myriad:
                                 result = self.runPsi4()
                                 if result == ResultCode.success:
                                         print("runPsi4() returned success code")
-                                        self.uploadResults()
+                                        while self.uploadResults() == ResultCode.failure:
+                                                print("Failure uploading results. Retrying in 60 seconds...")
+                                                time.sleep(60)
                                 else:
                                         # Check for known error situations in output.dat
                                         print("runPsi4() returned failure code. Checking for known errors")
