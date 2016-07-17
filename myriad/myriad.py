@@ -101,10 +101,10 @@ class Myriad:
                                 self.displacements = line
                 return ResultCode.success
 
-        def getJobSupportFiles(self):
+        def getJobSupportFiles(self, jobGroup):
                 result = ResultCode.success
                 # download job-specific script(s) to the parent folder
-                url = self.myriadJobsFolderOnAWS + "/" + self.jobGroup + "/jobConfig.py"
+                url = self.myriadJobsFolderOnAWS + "/" + jobGroup + "/jobConfig.py"
                 print("Retrieving job config from " + url)
                 r = requests.get(url)
                 f = open("jobConfig.py", "w")
@@ -330,6 +330,7 @@ class Myriad:
         # Main
         def runOnce(self, jobGroup=None, error=None):
                 print("Job group = " + str(jobGroup))
+                self.jobGroup = jobGroup
 
                 # if we have seen this error before, bail out.
                 # We couldn't fix it the first time. Why should this time be any different?
@@ -353,7 +354,7 @@ class Myriad:
 
                 if result == ResultCode.success:
                         newerror = None
-                        result = self.getJobSupportFiles()
+                        result = self.getJobSupportFiles(jobGroup)
                         if result == ResultCode.success:
                                 self.getSystemSpecs()
                                 self.clearScratch()
