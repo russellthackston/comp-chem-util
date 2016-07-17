@@ -21,6 +21,7 @@ class Myriad:
                 self.jobID = ""
                 self.jobGUID = ""
                 self.jobGroup = ""
+                self.jobSubGroup = ""
                 self.makeInputDatParameters = ""
                 self.jobFolder = ""
                 self.errors = []
@@ -113,11 +114,14 @@ class Myriad:
                 url = self.myriadJobsFolderOnAWS + "/" + jobGroup + "/jobConfig.py"
                 print("Retrieving job config from " + url)
                 r = requests.get(url)
-                f = open("jobConfig.py", "w")
+
+                # Check for web errors (404, 500, etc.)
                 if "<html>" in r.text:
                         print("Bad jobConfig.py")
-                        print(r.text)
                         result = ResultCode.failure
+                print(r.text)
+
+                f = open("jobConfig.py", "w")
                 f.write(r.text)
                 f.flush()
                 f.close()
@@ -334,9 +338,12 @@ class Myriad:
                 return error
 
         # Main
-        def runOnce(self, jobGroup=None, error=None):
+        def runOnce(self, jobGroup=None, jobSubGroup=None, error=None):
                 print("Job group = " + str(jobGroup))
+                print("Job sub group = " + str(jobSubGroup))
+                print("Error = " + str(error))
                 self.jobGroup = jobGroup
+                self.jobSubGroup = jobSubGroup
 
                 # if we have seen this error before, bail out.
                 # We couldn't fix it the first time. Why should this time be any different?
@@ -354,8 +361,9 @@ class Myriad:
                 # if no error, get a new job.
                 # if there is an error code, we're going to re-run the job we have
                 if error == None:
-                        result = self.getJob(jobGroup)
+                        result = self.getJob(jobGroup, jobSubGroup)
                 else:
+                        print("Running current job again to correct for errors")
                         result = ResultCode.success
 
                 if result == ResultCode.success:
@@ -385,7 +393,7 @@ class Myriad:
                                 # if we encounter a known error, try the job again and compensate
                                 if newerror != None:
                                         print("Re-executing job due to known error: " + str(newerror))
-                                        result = self.runOnce(jobGroup, newerror)
+                                        result = self.runOnce(jobGroup, jobSubGroup, newerror)
                         else:
                                 print("Error retrieving support files")
 
