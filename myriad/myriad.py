@@ -102,14 +102,20 @@ class Myriad:
                 return ResultCode.success
 
         def getJobSupportFiles(self):
+                result = ResultCode.success
                 # download job-specific script(s) to the parent folder
                 url = self.myriadJobsFolderOnAWS + "/" + self.jobGroup + "/jobConfig.py"
                 print("Retrieving job config from " + url)
                 r = requests.get(url)
                 f = open("jobConfig.py", "w")
+                if "<html>" in r.text:
+                        print("Bad jobConfig.py")
+                        print(r.text)
+                        result = ResultCode.failure
                 f.write(r.text)
                 f.flush()
                 f.close()
+                return result
 
         def getSystemSpecs(self):
                 self.cpus = psutil.cpu_count()
@@ -347,29 +353,32 @@ class Myriad:
 
                 if result == ResultCode.success:
                         newerror = None
-                        self.getJobSupportFiles()
-                        self.getSystemSpecs()
-                        self.clearScratch()
-                        self.makeJobFolder()
-                        self.makeInputDat()
-                        result = self.runPsi4()
+                        result = self.getJobSupportFiles()
                         if result == ResultCode.success:
-                                print("runPsi4() returned success code")
-                                self.uploadResults()
+                                self.getSystemSpecs()
+                                self.clearScratch()
+                                self.makeJobFolder()
+                                self.makeInputDat()
+                                result = self.runPsi4()
+                                if result == ResultCode.success:
+                                        print("runPsi4() returned success code")
+                                        self.uploadResults()
+                                else:
+                                        # Check for known error situations in output.dat
+                                        print("runPsi4() returned failure code. Checking for known errors")
+                                        newerror = self.checkError()
+                                        self.postJobStatus(False, "PSI4 error: " + str(newerror))
+                                        print("CheckError() result: " + str(newerror))
+
+                                self.closeJobFolder()
+                                self.clearScratch()
+
+                                # if we encounter a known error, try the job again and compensate
+                                if newerror != None:
+                                        print("Re-executing job due to known error: " + str(newerror))
+                                        result = self.runOnce(jobGroup, newerror)
                         else:
-                                # Check for known error situations in output.dat
-                                print("runPsi4() returned failure code. Checking for known errors")
-                                newerror = self.checkError()
-                                self.postJobStatus(False, "PSI4 error: " + str(newerror))
-                                print("CheckError() result: " + str(newerror))
-
-                        self.closeJobFolder()
-                        self.clearScratch()
-
-                        # if we encounter a known error, try the job again and compensate
-                        if newerror != None:
-                                print("Re-executing job due to known error: " + str(newerror))
-                                result = self.runOnce(jobGroup, newerror)
+                                print("Error retrieving support files")
 
                 else:
                         result = ResultCode.noaction
