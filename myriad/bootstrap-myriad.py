@@ -1,3 +1,4 @@
+import argparse
 import importlib
 import libmyriad
 import myriad
@@ -27,14 +28,15 @@ class Bootstrap:
                 f.flush()
                 f.close()
 
-        def run(self, jobGroup=None):
+        def run(self, jobGroup=None, jobSubGroup=None):
                 print("Job group = " + str(jobGroup))
+                print("Job sub group = " + str(jobSubGroup))
                 result = libmyriad.ResultCode.success
                 while(True):
 
                         # run a myriad job
                         m = myriad.Myriad()
-                        result = m.runOnce(jobGroup)
+                        result = m.runOnce(jobGroup, jobSubGroup)
 
                         if result == libmyriad.ResultCode.success:
                                 print('Job completed. Checking for another job.')
@@ -59,11 +61,10 @@ class Bootstrap:
                         # Download a (potentially) updated copy of Myriad
                         self.downloadMyriad()
 
-jobGroup=None
-if len(sys.argv) > 1:
-        jobGroup=sys.argv[1]
-        print("Found job group parameter: " + jobGroup)
-else:
-        print("No job group parameter provided")
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--group', dest='group', action='store', type=str, help='Optional group for filtering the requested job')
+parser.add_argument('--subGroup', dest='subGroup', action='store', type=str, help='Optional sub group for filtering the requested job')
+args = parser.parse_args()
+
 b = Bootstrap()
-b.run(jobGroup)
+b.run(args.group, args.subGroup)

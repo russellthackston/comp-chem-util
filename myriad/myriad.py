@@ -37,14 +37,23 @@ class Myriad:
                                 self.myriadJobsFolderOnAWS = line.split(' ')[1].strip()
                                 print('Myriad AWS endpoint set to ' + self.myriadJobsFolderOnAWS)
 
-        def getJob(self, jobGroup=None):
+        def getJob(self, jobGroup=None, jobSubGroup=None):
                 print("Requesting a new job from " + str(self.maestroAPIGateway))
-                if jobGroup != None:
+                if jobGroup != None and jobSubGroup != None:
+                        print("Job group set to " + str(jobGroup))
+                        print("Job sub group set to " + str(jobSubGroup))
+                        p = {"jobGroup": jobGroup, "jobSubGroup": jobSubGroup}
+                        r = requests.get(self.maestroAPIGateway, params=p)
+                elif jobGroup != None and jobSubGroup == None:
                         print("Job group set to " + str(jobGroup))
                         p = {"jobGroup": jobGroup}
                         r = requests.get(self.maestroAPIGateway, params=p)
+                elif jobGroup == None and jobSubGroup != None:
+                        print("Job sub group set to " + str(jobSubGroup))
+                        p = {"jobSubGroup": jobSubGroup}
+                        r = requests.get(self.maestroAPIGateway, params=p)
                 else:
-                        print("No job group specified")
+                        print("No job group or sub group specified")
                         r = requests.get(self.maestroAPIGateway)
                 # Check for good HTTP response
                 if r.status_code == 200:

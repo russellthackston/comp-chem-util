@@ -52,15 +52,35 @@ def get_next_job(event, context):
         if 'jobGroup' in event:
                 if event['jobGroup'] != "":
                         jobGroup = event['jobGroup']
+                        logger.info("JobGoup set to " + jobGroup)
+        else:
+                logger.info("No JobGoup provided")
+        jobSubGroup = None
+        if 'jobSubGroup' in event:
+                if event['jobSubGroup'] != "":
+                        jobSubGroup = event['jobSubGroup']
+                        logger.info("JobSubGoup set to " + jobGroup)
+        else:
+                logger.info("No JobSubGoup provided")
         
         try:
                 with conn.cursor() as cur:
-                        if jobGroup == None:
+                        if jobGroup == None and jobSubGroup == None:
                                 sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM Executions) LIMIT 1"
+                                logger.info(sql)
                                 cur.execute(sql)
-                        else:
+                        elif jobGroup != None and jobSubGroup == None:
                                 sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM Executions) AND Jobs.JobGroup = %s LIMIT 1;"
+                                logger.info(sql)
                                 cur.execute(sql, jobGroup)
+                        elif jobGroup == None and jobSubGroup != None:
+                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM Executions) AND Jobs.MakeInputDatParameters = %s LIMIT 1;"
+                                logger.info(sql)
+                                cur.execute(sql, jobSubGroup)
+                        else:
+                                sql = "SELECT Jobs.JobID, Jobs.JobName, Jobs.JobDefinition, Jobs.Created, Jobs.MakeInputDatParameters, Jobs.JobGroup FROM Jobs WHERE Jobs.JobID NOT IN (SELECT DISTINCT JobID FROM Executions) AND Jobs.JobGroup = %s AND Jobs.MakeInputDatParameters = %s LIMIT 1;"
+                                logger.info(sql)
+                                cur.execute(sql, (jobGroup, jobSubGroup))
 
                         found = False
                         for row in cur:
