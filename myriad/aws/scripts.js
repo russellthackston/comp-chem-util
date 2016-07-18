@@ -50,6 +50,11 @@ function refreshTable() {
                         var cols = Math.ceil(results.length / rows);
                         var c = 0;
                         var row = null;
+                        var placeholders = 0;
+                        var notStarted = 0;
+                        var started = 0;
+                        var completed = 0;
+                        var failed = 0;
                         for(var i=0;i<results.length;i++){
                                 var item = results[i];
                                 if (c == 0) {
@@ -58,12 +63,32 @@ function refreshTable() {
                                 }
                                 var j = encodeURI(JSON.stringify(item));
         			var cell = row.insertCell(c).innerHTML = "<div class='"+item['JobStatus']+"'><a href='d.html?j="+j+"' target='_blank'>" +item['JobID'] + "</a></div>";
-        			
+        			if (item['JobStatus'] == 'Placeholder') {
+        			        placeholders++;
+        			}
+        			if (item['JobStatus'] == 'Not_started') {
+        			        notStarted++;
+        			}
+        			if (item['JobStatus'] == 'Started') {
+        			        started++;
+        			}
+        			if (item['JobStatus'] == 'Completed') {
+        			        completed++;
+        			}
+        			if (item['JobStatus'] == 'Failed') {
+        			        failed++;
+        			}
                                 c++;
                                 if (c > cols) {
                                         c = 0;
                                 }
                         }
+                        var sumdiv = document.getElementById("summary");
+                        sumdiv.innerHTML = "<div>Placeholders: "+placeholders+"</div>"+
+                                "<div>Not started: "+notStarted+"</div>"+
+                                "<div>Started: "+started+"</div>"+
+                                "<div>Completed: "+completed+"</div>"+
+                                "<div>Failed: "+failed+"</div>";
                 }
         };
         xhttp.open("GET", "https://4rmyryq453.execute-api.us-east-1.amazonaws.com/prod", true);
