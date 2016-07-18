@@ -13,17 +13,17 @@ class Myriad:
         
         def __init__(self):
                 self.config = []
-                self.maestroAPIGateway = ""
-                self.myriadJobsFolderOnAWS = ""
+                self.maestroAPIGateway = None
+                self.myriadJobsFolderOnAWS = None
                 self.cpus = 1
                 self.mem = 1
-                self.displacements = ""
-                self.jobID = ""
-                self.jobGUID = ""
-                self.jobGroup = ""
-                self.jobSubGroup = ""
-                self.makeInputDatParameters = ""
-                self.jobFolder = ""
+                self.displacements = None
+                self.jobID = None
+                self.jobGUID = None
+                self.jobGroup = None
+                self.jobSubGroup = None
+                self.makeInputDatParameters = None
+                self.jobFolder = None
                 self.errors = []
 
         def loadEndpoints(self):
@@ -108,10 +108,10 @@ class Myriad:
                                 self.displacements = line
                 return ResultCode.success
 
-        def getJobSupportFiles(self, jobGroup):
+        def getJobSupportFiles(self):
                 result = ResultCode.success
                 # download job-specific script(s) to the parent folder
-                url = self.myriadJobsFolderOnAWS + "/" + jobGroup + "/jobConfig.py"
+                url = self.myriadJobsFolderOnAWS + "/" + self.jobGroup + "/jobConfig.py"
                 print("Retrieving job config from " + url)
                 r = requests.get(url)
 
@@ -361,14 +361,14 @@ class Myriad:
                 # if no error, get a new job.
                 # if there is an error code, we're going to re-run the job we have
                 if error == None:
-                        result = self.getJob(jobGroup, jobSubGroup)
+                        result = self.getJob(self.jobGroup, self.jobSubGroup)
                 else:
                         print("Running current job again to correct for errors")
                         result = ResultCode.success
 
                 if result == ResultCode.success:
                         newerror = None
-                        result = self.getJobSupportFiles(jobGroup)
+                        result = self.getJobSupportFiles()
                         if result == ResultCode.success:
                                 self.getSystemSpecs()
                                 self.clearScratch()
@@ -393,7 +393,7 @@ class Myriad:
                                 # if we encounter a known error, try the job again and compensate
                                 if newerror != None:
                                         print("Re-executing job due to known error: " + str(newerror))
-                                        result = self.runOnce(jobGroup, jobSubGroup, newerror)
+                                        result = self.runOnce(self.jobGroup, self.jobSubGroup, newerror)
                         else:
                                 print("Error retrieving support files")
 
