@@ -151,7 +151,7 @@ class Myriad:
                         waiting = True
                         while waiting:
                                 try:
-                                        exitcode = p.wait(120)
+                                        exitcode = p.wait(300)
                                         waiting = False
                                 except subprocess.TimeoutExpired:
                                         waiting = True
