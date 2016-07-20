@@ -235,10 +235,10 @@ def post_job_results(event, context):
 
         finally:
                 conn.close()
-        
+
 '''
-This function returns a list of jobs from the database, from which may be derived the job
-statuses. This function is directly available via the API Gateway.
+This function returns a list of jobs from the database in JSON format, from which may be 
+derived the job statuses. This function is directly available via the API Gateway.
 '''
 def get_jobs_details(event, context):
         try:
@@ -286,3 +286,4 @@ def get_jobs_details(event, context):
                 conn.close()
 
         return results
+
