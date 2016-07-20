@@ -8,6 +8,7 @@ import requests
 import shutil
 import subprocess
 import time
+import zipfile
 
 class Myriad:
         
@@ -25,6 +26,7 @@ class Myriad:
                 self.makeInputDatParameters = None
                 self.jobFolder = None
                 self.errors = []
+                self.ip = None
 
         def loadEndpoints(self):
                 # Load the configuration values from file
@@ -336,6 +338,28 @@ class Myriad:
                                 break
                 print("Returning error: " + str(error))
                 return error
+        
+        def zipJobFolder(self):
+                # Get IP address
+                f = open('ip.txt')
+                self.ip = f.readLine()
+                f.close()
+                if self.ip == None:
+                        self.ip = ""
+                
+                try:
+                        print("Compressing job folder...")
+                        myZipFile = zipfile.ZipFile("ip_" + ip + "_" + jobFolder + ".zip", "w" )
+                        listing = os.listdir(jobFolder)
+                        for f in listing:
+                                myZipFile.write(jobFolder + "/" + f)
+                        myZipFile.close()
+                        print("Job folder compressed. Removing original...")
+                        shutil.rmtree(jobFolder)
+                        print("Done removing original job folder")
+                except Exception as e:
+                        print("Error compressing job folder: " + str(e))
+                        
 
         # Main
         def runOnce(self, jobGroup=None, jobSubGroup=None, error=None):
@@ -355,7 +379,7 @@ class Myriad:
                 if error != None:
                         self.errors.append(error)
 
-                # run the job...
+                # run the endpoints for web service calls
                 self.loadEndpoints()
 
                 # if no error, get a new job.
@@ -388,6 +412,7 @@ class Myriad:
                                         print("CheckError() result: " + str(newerror))
 
                                 self.closeJobFolder()
+                                self.zipJobFolder()
                                 self.clearScratch()
 
                                 # if we encounter a known error, try the job again and compensate

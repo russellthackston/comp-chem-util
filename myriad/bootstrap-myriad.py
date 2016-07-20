@@ -1,9 +1,11 @@
 import argparse
+import glob
 import importlib
 import libmyriad
 import myriad
 import os
 import requests
+import shutil
 import subprocess
 import sys
 import time
@@ -37,6 +39,13 @@ class Bootstrap:
                         # run a myriad job
                         m = myriad.Myriad()
                         result = m.runOnce(jobGroup, jobSubGroup)
+
+                        # Upload job folder(s) to S3 and delete for local drive
+                        if glob.glob("*.zip"):
+                                command = "aws s3 cp *.zip s3://myriaddropbox/"
+                                process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+                                command = "rm -Rf *.zip"
+                                process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 
                         if result == libmyriad.ResultCode.success:
                                 print('Job completed. Checking for another job.')
