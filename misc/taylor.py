@@ -11,6 +11,7 @@ parser.add_argument("-s", "--start", help="Only print lines with indexes greater
 parser.add_argument("-e", "--end", help="Only print lines with indexes less than or equal to 'end'", type=int)
 parser.add_argument("-m", "--modcheck", help="Enables a mod check of one of more subsets of digits (first digit is index 1). Expects this value to be in the format '-m d:[s-e]' where 'd' is the mod check value, 's' is the start index, and 'e' is the end index.", type=str)
 parser.add_argument("-q", "--equivalence", help="Enables an equivalence check of one or more subsets of digits (first digit is index 1). Expects this value to be in the format '-m q:[s-e]' where 'q' is the equivilence check value, 's' is the start index, and 'e' is the end index.", type=str)
+parser.add_argument("-g", "--groupof", help="Enables an check of one or more subsets of digits (first digit is index 1) for a specific value. Expects this value to be in the format '-g n:[s-e]' where 'n' is the specific value, 's' is the start index, and 'e' is the end index.", type=str)
 parser.add_argument("-p", "--parallel", help="Calculates the --start and --end values based on the provided node number and number of nodes. Expected format is '--p (node number):(number of nodes)'", type=str)
 parser.add_argument("-f", "--forceConstants", help="Write force constant values to force.txt", action="store_true")
 parser.add_argument("-d", "--displacements", help="Write displacement values to disp.txt", action="store_true")
@@ -25,6 +26,7 @@ args=parser.parse_args()
 
 modchecks=None
 eqchecks=None
+groupofchecks=None
 
 # This function derives a single line from the cartesian product with the index 'n'
 def entry(n, digits):
@@ -123,6 +125,43 @@ def modCheck(e, modchecks):
 					print "# Mod checking %" + str(k) + " for " + str(sub) + ". Passed."
 	return True
 
+def goCheck(e, groupofchecks):
+	if groupofchecks == None or len(groupofchecks.keys()) == 0:
+		if args.verbose and not args.silent:
+			print "# No group of checks defined"
+		return True
+	if args.verbose and not args.silent:
+		print "# Group of checking is enabled."
+	for k in groupofchecks.iterkeys():
+		for r in groupofchecks[k]:
+			start=r[0]
+			end=r[1]
+			sub=e[start-1:end]
+			# check for group containing one and only one value per range
+			failedGroup=not rangeContainsOneOf(sub, k)
+			if failedGroup:
+				if args.verbose and not args.silent:
+					print "# Group of checking " + str(k) + " for " + str(sub) + ". Failed."
+				return False
+			else:
+				if args.verbose and not args.silent:
+					print "# Group of checking " + str(k) + " for " + str(sub) + ". Passed."
+	return True
+
+def rangeContainsOneOf(range, value):
+	found = False
+	for digit in range:
+		if digit == value:
+			# return False if we already found the value
+			if found:
+				return False
+			found = True
+		else:
+			# return false if we find a different non-zero value
+			if digit != 0:
+				return False
+	return found
+
 def displacements(e):
 	if args.verbose and not args.silent:
 		print "# Converting force constants to displacements for " + str(e)
@@ -191,6 +230,12 @@ def main(startIndex,endIndex):
 		eqchecks=parseRanges(args.equivalence)
 		if args.verbose and not args.silent:
 			print "# Parsed mod check " + str(args.equivalence) + " into " + str(eqchecks)
+
+	# If group of checks are enabled, build a list of checks to be performed
+	if args.groupof:
+		groupofchecks=parseRanges(args.groupof)
+		if args.verbose and not args.silent:
+			print "# Parsed group of check " + str(args.groupof) + " into " + str(groupofchecks)
 
 	# Open the output file, if requested
 	writeAll=(not args.indexes and not args.displacements and not args.forceConstants and not args.summary)
@@ -263,35 +308,47 @@ def main(startIndex,endIndex):
 					ec = eqCheck(e, eqchecks)
 				else:
 					ec = True
-				if (args.modcheck == None and not ec) or (args.equivalence == None and not mc) or (not ec and not mc):
+				if args.groupof != None:
 					if args.verbose and not args.silent:
-						if not mc:
+						print "# Performing groupof check"
+					go = goCheck(e, groupofchecks)
+				else:
+					go = True
+				failedModOrEq = (args.modcheck == None and not ec) or (args.equivalence == None and not mc) or (not ec and not mc)
+				failedGoCheck = args.groupof != None and not go
+				if failedModOrEq and failedGoCheck:
+					if args.verbose and not args.silent:
+						if args.modcheck != None and not mc:
 							print '# Failed mod check'
-						if not ec:
+						if args.equivalence != None and not ec:
 							print '# Failed equivalence check'
+						if args.groupof != None and not go:
+							print '# Failed group of check'
 					rowCount+=1
 				else:
+				        if args.verbose and not args.silent:
+				                print '# Good record: ' + str(e)
 					if args.summary:
-                                		rowsIndexes+=1
-                                		rowsForce+=1
-                                		rowsDisp+=len(displacements(e))
-					if args.indexes or writeAll:
-		                                fIndexes.write(str(i)+"\n")
-                		        if args.displacements or writeAll:
-						lst=displacements(e)
-						for l in lst:
-                                			writerDisp.writerow(l)
-                		        if args.forceConstants or writeAll:
-		                                writerForce.writerow(e)
+                                                rowsIndexes+=1
+                                                rowsForce+=1
+                                                rowsDisp+=len(displacements(e))
+                                        if args.indexes or writeAll:
+                                                fIndexes.write(str(i)+"\n")
+                                        if args.displacements or writeAll:
+                                                lst=displacements(e)
+                                        for l in lst:
+                                                writerDisp.writerow(l)
+                                        if args.forceConstants or writeAll:
+                                                writerForce.writerow(e)
 			else:
 				if args.verbose and not args.silent:
 					print '# Skipped ' + str(e) + ' due to array total greater than (args.digits - 1)'
 
 	if args.indexes or writeAll:
 		fIndexes.close()
-        if args.displacements or writeAll:
+	if args.displacements or writeAll:
                 fDisp.close()
-        if args.forceConstants or writeAll:
+	if args.forceConstants or writeAll:
                 fForce.close()
 
 	if args.summary:
@@ -304,7 +361,7 @@ def main(startIndex,endIndex):
 		print '# Done creating cartesion product'
 
 def magic(reps, node, nodes):
-        return ((2*reps*node)**long((reps**2)/(21*math.sqrt(nodes))))
+	return ((2*reps*node)**long((reps**2)/(21*math.sqrt(nodes))))
 
 
 
