@@ -168,10 +168,10 @@ def main(startIndex,endIndex):
 	rowsForce = 0
 	rowsDisp = 0
 
-        # Logical error checking with config
+	# Logical error checking with config
 	if args.equivalence and not args.modcheck:
-                print "# Error: Equivilence check defined without mod check"
-                exit(1)
+		print "# Error: Equivilence check defined without mod check"
+		exit(1)
 
 	# Set up summary only values
 	if args.summary:
@@ -203,11 +203,11 @@ def main(startIndex,endIndex):
 	if args.indexes or writeAll:
 		fIndexes = open('indexes.txt', 'w')
 	if args.displacements or writeAll:
-                fDisp = open('disp.txt', 'w')
-                writerDisp = csv.writer(fDisp)
+		fDisp = open('disp.txt', 'w')
+		writerDisp = csv.writer(fDisp)
 	if args.forceConstants or writeAll:
-                fForce = open('force.txt', 'w')
-                writerForce = csv.writer(fForce)
+		fForce = open('force.txt', 'w')
+		writerForce = csv.writer(fForce)
 
 	rowCount = 0
 	i=startIndex
@@ -257,9 +257,9 @@ def main(startIndex,endIndex):
 			else:
 				i+=1
 			if sum(e) <= (args.digits - 1):
-			        keeper = True
+				keeper = True
 
-			        # if a mod check is defined, run it
+				# if a mod check is defined, run it
 				if args.modcheck != None:
 					if args.verbose and not args.silent:
 						print "# Performing mod check"
@@ -267,39 +267,39 @@ def main(startIndex,endIndex):
 				else:
 					passedModCheck = True
 
-                                # if the mod check fails, you may need to check for an Eq check
+				# if the mod check fails, you may need to check for an Eq check
 				if not passedModCheck:
 					if args.verbose and not args.silent:
-                                                print '# Failed mod check'
-                                        if args.equivalence != None:
-                                                if args.verbose and not args.silent:
-                                                        print "# Performing equivalence check"
-                                                passedEqCheck = eqCheck(e, eqchecks)
-                                                if not passedEqCheck:
-                                                        if args.verbose and not args.silent:
-		        					print '# Failed equivalence check'
-                                                        keeper = False
-                                        else:
-                                                keeper = False
-                                if not keeper:
-                                        if args.verbose and not args.silent:
-                                                print '# Bad record: ' + str(e)
+						print '# Failed mod check'
+					if args.equivalence != None:
+						if args.verbose and not args.silent:
+							print "# Performing equivalence check"
+						passedEqCheck = eqCheck(e, eqchecks)
+						if not passedEqCheck:
+							if args.verbose and not args.silent:
+								print '# Failed equivalence check'
+							keeper = False
+					else:
+						keeper = False
+				if not keeper:
+					if args.verbose and not args.silent:
+						print '# Bad record: ' + str(e)
 					rowCount+=1
 				else:
-				        if args.verbose and not args.silent:
-				                print '# Good record: ' + str(e)
+					if args.verbose and not args.silent:
+						print '# Good record: ' + str(e)
 					if args.summary:
-                                                rowsIndexes+=1
-                                                rowsForce+=1
-                                                rowsDisp+=len(displacements(e))
-                                        if args.indexes or writeAll:
-                                                fIndexes.write(str(i)+"\n")
-                                        if args.displacements or writeAll:
-                                                lst=displacements(e)
-                                        for l in lst:
-                                                writerDisp.writerow(l)
-                                        if args.forceConstants or writeAll:
-                                                writerForce.writerow(e)
+						rowsIndexes+=1
+						rowsForce+=1
+						rowsDisp+=len(displacements(e))
+					if args.indexes or writeAll:
+						fIndexes.write(str(i)+"\n")
+					if args.displacements or writeAll:
+						lst=displacements(e)
+					for l in lst:
+						writerDisp.writerow(l)
+					if args.forceConstants or writeAll:
+						writerForce.writerow(e)
 			else:
 				if args.verbose and not args.silent:
 					print '# Skipped ' + str(e) + ' due to array total greater than (args.digits - 1)'
@@ -307,9 +307,9 @@ def main(startIndex,endIndex):
 	if args.indexes or writeAll:
 		fIndexes.close()
 	if args.displacements or writeAll:
-                fDisp.close()
+		fDisp.close()
 	if args.forceConstants or writeAll:
-                fForce.close()
+		fForce.close()
 
 	if args.summary:
 		print "Job Summary"
