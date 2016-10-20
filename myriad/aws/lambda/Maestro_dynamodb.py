@@ -477,11 +477,27 @@ def get_job_count(event, context):
 		table = dynamodb.Table('MaestroPendingJobs')
 
 	try:
-		response = table.scan(
-			Select='COUNT'
-		)
+		lastEvaluatedKey = None
+		count = 0
+		while True:
+			if lastEvaluatedKey == None:
+				response = table.scan(
+					Select='COUNT'
+				)
+				logger.info(response)
+			else:
+				response = table.scan(
+					Select='COUNT',
+					ExclusiveStartKey=lastEvaluatedKey
+				)
+			count += response['Count']
+			if 'LastEvaluatedKey' in response:
+				lastEvaluatedKey = response['LastEvaluatedKey']
+			else:
+				break
+
 	except ClientError as e:
 		logger.info(e)
 		raise Exception('500: Database error')
 	else:
-		return response['Count']
+		return count
