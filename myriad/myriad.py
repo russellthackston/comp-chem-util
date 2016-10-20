@@ -81,10 +81,22 @@ class Myriad:
 
         def parseJob(self, job):
                 # The response should look something like this...
+                #
+                # Old version:
                 #    # JobID: 527
                 #    # JobGUID: b4af8ced-3661-11e6-a162-12fe8751cda9
                 #    # MakeInputDatParameters: -t MTc
                 #    -1,1,-2
+                #
+		# New version:
+                #	{
+		#	  "JobID": "12345",
+		#	  "JobGroup": "NS2",
+		#	  "JobCategory": "5Z",
+		#	  "JobName": "NS2-5Z-1",
+		#	  "JobDefinition": {"Displacements":"-1,-1,-2"},
+		#	  "Created": "2016-07-17 15:26:45"
+		#	}
                 print("Parsing job")
                 for line in job.split('\n'):
                         print('Parsing line: ' + line)
