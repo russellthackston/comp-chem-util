@@ -99,27 +99,12 @@ class Myriad:
 		#	}
                 print("Parsing job")
                 for line in job.split('\n'):
-                        print('Parsing line: ' + line)
-                        if line.strip() == '':
-                                pass
-                        elif line.strip().startswith('#'):
-                                if "JobID:" in line.strip():
-                                        self.jobID = line.split(':')[1].strip()
-                                        print('JobID set to ' + str(self.jobID))
-                                elif "JobGUID:" in line.strip():
-                                        self.jobGUID = line.split(':')[1].strip()
-                                        print('JobGUID set to ' + str(self.jobGUID))
-                                elif "JobGroup:" in line.strip():
-                                        self.jobGroup = line.split(':')[1].strip()
-                                        print('JobGroup set to ' + str(self.jobGroup))
-                                elif "MakeInputDatParameters:" in line.strip():
-                                        self.makeInputDatParameters = line.split(':')[1].strip()
-                                        print('MakeInputDatParameters set to ' + str(self.makeInputDatParameters))
-                                else:
-                                        self.displacements = line.strip()
-                        else:
-                                # Non-blank, non-commented line. Must be the displacements
-                                self.displacements = line
+                	parsed_json = json.loads(job)
+                	self.jobID = parsed_json['JobID']
+                	self.jobGUID = parsed_json['JobID']
+                	self.jobGroup = parsed_json['JobGroup']
+                	self.makeInputDatParameters = parsed_json['JobCategory']
+                	self.displacements = parsed_json['JobDefinition']['Displacements']
                 return ResultCode.success
 
         def getJobSupportFiles(self):
