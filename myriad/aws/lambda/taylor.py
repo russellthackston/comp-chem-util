@@ -9,6 +9,8 @@ import boto3
 import os
 import uuid
 
+import libtaylor
+
 s3_client = boto3.client('s3')
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -18,44 +20,11 @@ event = { "digits" : 5, "reps" : 12, "start" : 1, "end" : 125, "modcheck" : [{ "
 event = { "digits" : 5, "reps" : 12, "modcheck" : [{ "checkvalue" : 2, "ranges" : [{"start" : 6, "end" : 9}, {"start" : 10, "end" : 11}, {"start" : 12, "end" : 12}] }], "equivalence" : [{ "checkvalue" : 3, "ranges" : [{"start" : 6, "end" : 9}, {"start" : 10, "end" : 11}, {"start" : 12, "end" : 12}] }] }
 '''
 
-#parser = argparse.ArgumentParser(description='Generate a Taylor series.', epilog='Example: "python taylor.py 5 24" will print the product of 24 repetitions of [0,1,2,3,4].')
-#parser.add_argument("digits", help="The number of digits in the array [0..digits]", type=int)
-#parser.add_argument("reps", help="The number of repetitions of the set", type=int)
-#parser.add_argument("-s", "--start", help="Only print lines with indexes greater than or equal to 'start'", type=int)
-#parser.add_argument("-e", "--end", help="Only print lines with indexes less than or equal to 'end'", type=int)
-#parser.add_argument("-m", "--modcheck", help="Enables a mod check of one of more subsets of digits (first digit is index 1). Not passing the mod check excludes the row. Expects this value to be in the format '-m d:[s-e]' where 'd' is the mod check value, 's' is the start index, and 'e' is the end index.", type=str)
-#parser.add_argument("-q", "--equivalence", help="Enables an equivalence check of one or more subsets of digits (first digit is index 1). Passing the equivalence check, after failing a mod check, includes the row. Expects this value to be in the format '-m q:[s-e]' where 'q' is the equivalence check value, 's' is the start index, and 'e' is the end index.", type=str)
-#parser.add_argument("-p", "--parallel", help="Calculates the --start and --end values based on the provided node number and number of nodes. Expected format is '--p (node number):(number of nodes)'", type=str)
-#parser.add_argument("-f", "--forceConstants", help="Write force constant values to force.txt", action="store_true")
-#parser.add_argument("-d", "--displacements", help="Write displacement values to disp.txt", action="store_true")
-#parser.add_argument("-i", "--indexes", help="Write row indexes to indexes.txt", action="store_true")
-#parser.add_argument("-l", "--silent", help="Suppress all output to stdout", action="store_true")
-#parser.add_argument("-u", "--unfiltered", help="Skip the filtering step and produce a complete cartesian product", action="store_true")
-#parser.add_argument("-v", "--verbose", help="Produce verbose output", action="store_true")
-#parser.add_argument("--debug", help="Sets up the job but does not run it. Prints debug info instead", action="store_true")
-#parser.add_argument("--summary", help="Only print summary information (i.e. number of rows in output files)", action="store_true")
-#parser.add_argument('--version', action='version', version='Taylor Series generation script v1.0. Latest version and full documentation available at https://github.com/russellthackston/comp-chem-util in the "misc" folder. Report any bugs or issues at the above web address.')
-#args=parser.parse_args()
-
-# This function derives a single line from the cartesian product with the index 'n'
-def entry(n, digits, reps):
-	combo = []
-	#logger.info('# Building entry(' + str(n) + ')')
-	exp=1
-	while n > 0:
-		div=len(digits)**exp
-		digit=(n%div)
-		n-=digit
-		digit=digit/len(digits)**(exp-1)
-		combo.insert(0,int(digit))
-		exp+=1
-	for i in range(0,reps-len(combo)):
-		combo.insert(0,0)
-	return combo
+def info(msg):
+	logger.info(msg)
 
 def parseRanges(rangeobj):
 	# [{ "checkvalue" : 2, "ranges" : [{"start" : 6, "end" : 9}, {...}, {...}] }, {...}]
-
 	results=dict()
 	for range in rangeobj:
 		num=range['checkvalue']
@@ -65,79 +34,8 @@ def parseRanges(rangeobj):
 			start=r['start']
 			end=r['end']
 			results[num].append([start,end])
-	#logger.info("# Parsed range " + str(rangeobj) + " as " + str(results))
+	info("# Parsed range " + str(rangeobj) + " as " + str(results))
 	return results
-
-def eqCheck(e, eqchecks):
-	if eqchecks == None or len(eqchecks.keys()) == 0:
-		#logger.info("# No equivalence checks defined")
-		return True
-	#logger.info("# Equivalence checking is enabled.")
-	for k in eqchecks.iterkeys():
-		for r in eqchecks[k]:
-			start=r[0]
-			end=r[1]
-			sub=e[start-1:end]
-			failedEq=sum(e[start-1:end]) != k
-			if failedEq:
-				#logger.info("# Equivalence checking of " + str(k) + " for sum(" + str(sub) + "). Failed.")
-				return False
-			else:
-				#logger.info("# Equivalence checking of " + str(k) + " for sum(" + str(sub) + "). Passed.")
-				pass
-	return True
-
-def modCheck(e, modchecks):
-	if modchecks == None or len(modchecks.keys()) == 0:
-		#logger.info("# No mod checks defined")
-		return True
-	#logger.info("# Mod checking is enabled.")
-	for k in modchecks.iterkeys():
-		for r in modchecks[k]:
-			start=r[0]
-			end=r[1]
-			sub=e[start-1:end]
-			failedMod=sum(e[start-1:end])%k != 0
-			if failedMod:
-				#logger.info("# Mod checking %" + str(k) + " for " + str(sub) + ". Failed.")
-				return False
-			else:
-				#logger.info("# Mod checking %" + str(k) + " for " + str(sub) + ". Passed.")
-				pass
-	return True
-
-def displacements(e):
-	#logger.info("# Converting force constants to displacements for " + str(e))
-	indexes=[]
-	values=[]
-	for i, digit in enumerate(e):
-		if digit != 0:
-			indexes.append(i)
-			values.append(digit)
-	if len(values) == 0:
-		#logger.info("# No non-zero values found in list " + str(e))
-		return [e]
-	#logger.info("# Non-zero value(s) " + str(values) + " located in index(es) " + str(indexes))
-	prods=[]
-	for i, digit in enumerate(values):
-		tmp=[]
-		for j in range(-1*digit,digit+1,2):
-			tmp.append(j)
-		prods.append(tmp)
-	newrows=map(list, itertools.product(*prods))
-	#logger.info("# Displacement combinations: " + str(newrows))
-	# Build each new displacement row by copying the force constant row then overwriting
-	#   the non-zero values with the calculated values
-	result=[]
-	for row in newrows:
-		# make a copy of 'e'
-		r=list(e)
-		for i, index in enumerate(indexes):
-			r[index]=row[i]
-		result.append(r)
-	#logger.info("# Calculated a total of " + str(len(result)) + " displacements")
-	#logger.info("# Displacement list: " + str(result))
-	return result
 
 def main(event, startIndex, endIndex, indexes, force, disp):
 	modchecks=None
@@ -179,7 +77,7 @@ def main(event, startIndex, endIndex, indexes, force, disp):
 	rowCount = 0
 	i=startIndex
 	while i < endIndex:
-		e=entry(i, digits, event['reps'])
+		e=libtaylor.entry(i, digits, event['reps'])
 		#logger.info('# Processing index ' + str(i))
 		old_i=i
 
@@ -218,6 +116,7 @@ def main(event, startIndex, endIndex, indexes, force, disp):
 				passedModCheck = True
 
 			# if the mod check fails, you may need to check for an Eq check
+			# Failing the mod check but passing the Eq check will get the record included
 			if not passedModCheck:
 				#logger.info('# Failed mod check')
 				if 'equivalence' in event:
