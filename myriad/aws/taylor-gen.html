@@ -1,0 +1,293 @@
+<html>
+<head>
+<meta charset="utf-8">
+	<title>The taylor.py input file generator</title>
+	<meta name="description" content="A webapp for generating an input file for taylor.py">
+	<meta name="author" content="Russell Thackston">
+	<style>
+		.indent {margin-left: 30px;}
+	</style>
+</head>
+<body>
+
+<!--
+{ 
+	"digits" : 5, 
+	"reps" : 12, 
+	"start" : 1, 
+	"end" : 125, 
+	"modcheck" : [
+		{ 
+			"checkvalue" : 2, 
+			"ranges" : [
+				{"start" : 6, "end" : 9}, 
+				{"start" : 10, "end" : 11}, 
+				{"start" : 12, "end" : 12}
+			] 
+		}
+	], 
+	"equivalence" : [
+		{ 
+			"checkvalue" : 3, 
+			"ranges" : [
+				{"start" : 6, "end" : 9}, 
+				{"start" : 10, "end" : 11}, 
+				{"start" : 12, "end" : 12}
+			]
+		}
+	], 
+	"parallel" : { 
+		"node" : 5, 
+		"nodes" : 100 
+	}
+}
+-->
+
+<label for="digits">Digits</label>
+<input type="text" name="digits" id="digits" value="5">
+<span>(Required)</span>
+<br>
+<label for="reps">Repetitions</label>
+<input type="text" name="reps" id="reps" value="5">
+<span>(Required)</span>
+<br>
+<label for="start">Start</label>
+<input type="text" name="start" id="start" value="">
+<br>
+<label for="end">End</label>
+<input type="text" name="end" id="end" value="">
+<br>
+<label for="node">Node</label>
+<input type="text" name="node" id="node" value="">
+<label for="nodes">of</label>
+<input type="text" name="nodes" id="nodes" value="">
+<br>
+<input id="mcd-count" type="hidden" value="0"/>
+<input id="eq-count" type="hidden" value="0"/>
+<hr>
+<button onclick="addModCheck()">Add mod check</button>
+<button onclick="addEqCheck()">Add Equivalence check</button>
+<button onclick="generate()">Generate input file</button>
+<hr>
+<div id="mcd"></div>
+<hr>
+<div id="eq"></div>
+
+<table>
+    <tr><td>Text to Save:</td></tr>
+    <tr>
+        <td colspan="3">
+            <textarea id="inputTextToSave" cols="80" rows="25"></textarea>
+        </td>
+    </tr>
+    <tr>
+        <td>Filename to Save As:</td>
+        <td><input id="inputFileNameToSaveAs"></input></td>
+        <td><button onclick="saveTextAsFile()">Save Text to File</button></td>
+    </tr>
+</table>
+ 
+<script type="text/javascript">
+
+function addFieldListeners() {
+	document.getElementById("digits").addEventListener("input", generate);
+	document.getElementById("reps").addEventListener("input", generate);
+	document.getElementById("start").addEventListener("input", generate);
+	document.getElementById("end").addEventListener("input", generate);
+	document.getElementById("node").addEventListener("input", generate);
+	document.getElementById("nodes").addEventListener("input", generate);
+}
+
+function generate() {
+	var output = {};
+	var digits = document.getElementById("digits").value;
+	var reps = document.getElementById("reps").value;
+	var s = document.getElementById("start").value;
+	var e = document.getElementById("end").value;
+	var node = document.getElementById("node").value;
+	var nodes = document.getElementById("nodes").value;
+
+	output.digits = parseInt(digits);
+	output.reps = parseInt(reps);
+	if (parseInt(s) > 0) {
+		output.start = parseInt(s);
+	}
+	if (parseInt(e) > 0) {
+		output.end = parseInt(e);
+	}
+	if (parseInt(node) > 0) {
+		output.node = parseInt(node);
+	}
+	if (parseInt(nodes) > 0) {
+		output.nodes = parseInt(nodes);
+	}
+
+	var count = parseInt(document.getElementById("mcd-count").value);
+	if (count > 0) {
+		output.modcheck = [];
+		generateCheck("mcd", output.modcheck, count);
+	}
+	count = parseInt(document.getElementById("eq-count").value);
+	if (count > 0) {
+		output.equivalence = [];
+		generateCheck("eq", output.equivalence, count);
+	}
+	
+	
+	document.getElementById("inputTextToSave").innerHTML = JSON.stringify(output, null, 2);
+}
+
+function generateCheck(prefix, ary, count) {
+	for (i = 1; i <= parseInt(count); i++) {
+		var check = {};
+		var val = document.getElementById(prefix + "-val-" + i);
+		check.checkvalue = parseInt(val.value);
+		var rangeCount = document.getElementById(prefix + i + "-rangecount");
+		var ary2 = [];
+		if (parseInt(rangeCount.value) > 0) {
+			check.ranges = ary2;
+		}
+		for (j = 1; j <= parseInt(rangeCount.value); j++) {
+			var r = {};
+			var start = document.getElementById(prefix + i + "-range-" + j + "-start");
+			var end = document.getElementById(prefix + i + "-range-" + j + "-end");
+			r.start = parseInt(start.value);
+			r.end = parseInt(end.value);
+			ary2.push(r);
+		}
+		ary.push(check);
+	}
+}
+
+function addModCheck()
+{
+	addCheck("mcd", "Mod");
+}
+
+function addEqCheck()
+{
+	addCheck("eq", "Equivalence");
+}
+
+function addCheck(prefix, label)
+{
+	var mcc = document.getElementById(prefix + "-count");
+	mcc.value = parseInt(mcc.value) + 1;
+	var mcd = document.getElementById(prefix);
+	var newdiv = document.createElement("div");
+	var newdivid = prefix + mcc.value;
+	var newrangeid = newdivid + "-range-1";
+	newdiv.setAttribute("id", newdivid);
+	newdiv.appendChild(document.createElement("hr"));
+	newdiv.appendChild(document.createTextNode(label + " check #" + mcc.value + ": Value "));
+
+	var newmcvinput = document.createElement("input");
+	newmcvinput.setAttribute("type", "text");
+	newmcvinput.addEventListener("input", generate);
+	var newinputid = prefix + "-val-" + mcc.value;
+	newmcvinput.setAttribute("id", newinputid);
+	newdiv.appendChild(newmcvinput);
+
+	var newrangeinput = document.createElement("input");
+	newrangeinput.setAttribute("type", "hidden");
+	newrangeinput.setAttribute("id", newdivid + "-rangecount");
+	newrangeinput.setAttribute("value", "1");
+	newdiv.appendChild(newrangeinput);
+
+	var div = document.createElement("div");
+	div.setAttribute("class", "indent");
+	div.setAttribute("id", newrangeid);
+	div.appendChild(document.createTextNode("Range #1: Start"));
+
+	var newmcrstart = document.createElement("input");
+	newmcrstart.setAttribute("type", "text");
+	newmcrstart.addEventListener("input", generate);
+	newmcrstart.setAttribute("id", newrangeid + "-start");
+	div.appendChild(newmcrstart);
+
+	div.appendChild(document.createTextNode(", End"));
+
+	var newmcrend = document.createElement("input");
+	newmcrend.setAttribute("type", "text");
+	newmcrend.addEventListener("input", generate);
+	newmcrend.setAttribute("id", newrangeid + "-end");
+	div.appendChild(newmcrend);
+
+	div2 = document.createElement("div");
+	div2.setAttribute("class", "indent");
+	div2.setAttribute("id", newdivid + "-button-div");
+	var addRange = document.createElement("button");
+	addRange.setAttribute("id", newdivid + "-button");
+	addRange.addEventListener("click", function(){
+		addCheckRange(newdivid);
+	});
+	addRange.appendChild(document.createTextNode("Add Range"));
+	div2.appendChild(addRange);
+
+	newdiv.appendChild(div);
+	newdiv.appendChild(div2);
+	mcd.appendChild(newdiv);
+}
+
+function addCheckRange(divid) {
+	var button = document.getElementById(divid + "-button");
+	var countid = divid + "-rangecount";
+	var countdiv = document.getElementById(countid);
+	var count = parseInt(countdiv.value) + 1;
+	var newrangeid = divid + "-range-" + count;
+	countdiv.value = count;
+
+	var div = document.getElementById(divid);
+	var buttonDiv = document.getElementById(divid + "-button-div");
+	div2 = document.createElement("div");
+	div2.setAttribute("class", "indent");
+	div2.setAttribute("id", newrangeid);
+	div2.appendChild(document.createTextNode("Range #"+ count +": Start"));
+
+	var newmcrstart = document.createElement("input");
+	newmcrstart.setAttribute("type", "text");
+	newmcrstart.addEventListener("input", generate);
+	newmcrstart.setAttribute("id", newrangeid + "-start");
+	div2.appendChild(newmcrstart);
+
+	div2.appendChild(document.createTextNode(", End"));
+
+	var newmcrend = document.createElement("input");
+	newmcrend.setAttribute("type", "text");
+	newmcrend.addEventListener("input", generate);
+	newmcrend.setAttribute("id", newrangeid + "-end");
+	div2.appendChild(newmcrend);
+
+	div.insertBefore(div2, buttonDiv);
+
+}
+
+function saveTextAsFile()
+{
+    var textToSave = document.getElementById("inputTextToSave").value;
+    var textToSaveAsBlob = new Blob([textToSave], {type:"text/plain"});
+    var textToSaveAsURL = window.URL.createObjectURL(textToSaveAsBlob);
+    var fileNameToSaveAs = document.getElementById("inputFileNameToSaveAs").value;
+ 
+    var downloadLink = document.createElement("a");
+    downloadLink.download = fileNameToSaveAs;
+    downloadLink.innerHTML = "Download File";
+    downloadLink.href = textToSaveAsURL;
+    downloadLink.onclick = destroyClickedElement;
+    downloadLink.style.display = "none";
+    document.body.appendChild(downloadLink);
+ 
+    downloadLink.click();
+}
+ 
+function destroyClickedElement(event)
+{
+    document.body.removeChild(event.target);
+}
+
+addFieldListeners();
+ 
+</script>
+ 
+</body>
+</html>
