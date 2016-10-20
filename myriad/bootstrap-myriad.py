@@ -30,15 +30,15 @@ class Bootstrap:
                 f.flush()
                 f.close()
 
-        def run(self, jobGroup=None, jobSubGroup=None):
+        def run(self, jobGroup=None, jobCategory=None):
                 print("Job group = " + str(jobGroup))
-                print("Job sub group = " + str(jobSubGroup))
+                print("Job category = " + str(jobCategory))
                 result = libmyriad.ResultCode.success
                 while(True):
 
                         # run a myriad job
                         m = myriad.Myriad()
-                        result = m.runOnce(jobGroup, jobSubGroup)
+                        result = m.runOnce(jobGroup, jobCategory)
 
                         # Upload job folder(s) to S3 and delete for local drive
                         if glob.glob("*.zip"):

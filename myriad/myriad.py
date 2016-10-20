@@ -22,7 +22,7 @@ class Myriad:
                 self.jobID = None
                 self.jobGUID = None
                 self.jobGroup = None
-                self.jobSubGroup = None
+                self.jobCategory = None
                 self.makeInputDatParameters = None
                 self.jobFolder = None
                 self.errors = []
@@ -41,20 +41,20 @@ class Myriad:
                                 self.myriadJobsFolderOnAWS = line.split(' ')[1].strip()
                                 print('Myriad AWS endpoint set to ' + self.myriadJobsFolderOnAWS)
 
-        def getJob(self, jobGroup=None, jobSubGroup=None):
+        def getJob(self, jobGroup=None, jobCategory=None):
                 print("Requesting a new job from " + str(self.maestroAPIGateway))
-                if jobGroup != None and jobSubGroup != None:
+                if jobGroup != None and jobCategory != None:
                         print("Job group set to " + str(jobGroup))
-                        print("Job sub group set to " + str(jobSubGroup))
-                        p = {"jobGroup": jobGroup, "jobSubGroup": jobSubGroup}
+                        print("Job sub group set to " + str(jobCategory))
+                        p = {"jobGroup": jobGroup, "jobCategory": jobCategory}
                         r = requests.get(self.maestroAPIGateway, params=p)
-                elif jobGroup != None and jobSubGroup == None:
+                elif jobGroup != None and jobCategory == None:
                         print("Job group set to " + str(jobGroup))
                         p = {"jobGroup": jobGroup}
                         r = requests.get(self.maestroAPIGateway, params=p)
-                elif jobGroup == None and jobSubGroup != None:
-                        print("Job sub group set to " + str(jobSubGroup))
-                        p = {"jobSubGroup": jobSubGroup}
+                elif jobGroup == None and jobCategory != None:
+                        print("Job sub group set to " + str(jobCategory))
+                        p = {"jobCategory": jobCategory}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 else:
                         print("No job group or sub group specified")
@@ -362,12 +362,12 @@ class Myriad:
                         
 
         # Main
-        def runOnce(self, jobGroup=None, jobSubGroup=None, error=None):
+        def runOnce(self, jobGroup=None, jobCategory=None, error=None):
                 print("Job group = " + str(jobGroup))
-                print("Job sub group = " + str(jobSubGroup))
+                print("Job sub group = " + str(jobCategory))
                 print("Error = " + str(error))
                 self.jobGroup = jobGroup
-                self.jobSubGroup = jobSubGroup
+                self.jobCategory = jobCategory
 
                 # if we have seen this error before, bail out.
                 # We couldn't fix it the first time. Why should this time be any different?
@@ -379,13 +379,13 @@ class Myriad:
                 if error != None:
                         self.errors.append(error)
 
-                # run the endpoints for web service calls
+                # load the endpoints for web service calls
                 self.loadEndpoints()
 
                 # if no error, get a new job.
                 # if there is an error code, we're going to re-run the job we have
                 if error == None:
-                        result = self.getJob(self.jobGroup, self.jobSubGroup)
+                        result = self.getJob(self.jobGroup, self.jobCategory)
                 else:
                         print("Running current job again to correct for errors")
                         result = ResultCode.success
@@ -418,7 +418,7 @@ class Myriad:
                                 # if we encounter a known error, try the job again and compensate
                                 if newerror != None:
                                         print("Re-executing job due to known error: " + str(newerror))
-                                        result = self.runOnce(self.jobGroup, self.jobSubGroup, newerror)
+                                        result = self.runOnce(self.jobGroup, self.jobCategory, newerror)
                         else:
                                 print("Error retrieving support files")
 
