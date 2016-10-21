@@ -26,6 +26,7 @@ parser.add_argument("--summary", help="Only print summary information (i.e. numb
 parser.add_argument('--version', action='version', version='Taylor Series generation script v1.0. Latest version and full documentation available at https://github.com/russellthackston/comp-chem-util in the "misc" folder. Report any bugs or issues at the above web address.')
 args=parser.parse_args()
 
+
 def info(msg):
 	if args.verbose and not args.silent:
 		print(msg)
@@ -65,284 +66,11 @@ def parseRanges(rangestr):
 	info("# Parsed range " + str(rangestr) + " as " + str(results))
 	return results
 
-def main2(event, startIndex, endIndex, indexes, force, disp):
-	modchecks=None
-	eqchecks=None
-
-	# Set up summary variables
-	rowsIndexes = 0
-	rowsForce = 0
-	rowsDisp = 0
-
-	# Logical error checking with config
-	if args.equivalence and not args.modcheck:
-		print "# Error: Equivilence check defined without mod check"
-		exit(1)
-
-	# Set up summary only values
-	if args.summary:
-		args.indexes = False
-		args.displacements = False
-		args.forceConstants = False
-
-	# Build the array of digits
-	digits=[]
-	for i in range(0,args.digits):
-		digits.append(i)
-	if args.verbose and not args.silent:
-		print '# Digits array: ' + str(digits)
-
-	# If mod checks are enabled, build a list of checks to be performed
-	if args.modcheck:
-		modchecks=parseRanges(args.modcheck)
-		if args.verbose and not args.silent:
-			print "# Parsed mod check " + str(args.modcheck) + " into " + str(modchecks)
-
-	# If equivalence checks are enabled, build a list of checks to be performed
-	if args.equivalence:
-		eqchecks=parseRanges(args.equivalence)
-		if args.verbose and not args.silent:
-			print "# Parsed mod check " + str(args.equivalence) + " into " + str(eqchecks)
-
-	# Open the output file, if requested
-	writeAll=(not args.indexes and not args.displacements and not args.forceConstants and not args.summary)
-	if args.indexes or writeAll:
-		fIndexes = open(indexes, 'w')
-	if args.displacements or writeAll:
-		fDisp = open(disp, 'w')
-		writerDisp = csv.writer(fDisp)
-	if args.forceConstants or writeAll:
-		fForce = open(force, 'w')
-		writerForce = csv.writer(fForce)
-
-	rowCount = 0
-	i=startIndex
-	while i < endIndex:
-		e=libtaylor.entry(i, digits, args.reps)
-		if args.verbose and not args.silent:
-			print '# Processing index ' + str(i)
-		old_i=i
-		if args.unfiltered:
-			rowCount+=1
-			if args.summary:
-				rowsIndexes+=1
-				rowsForce+=1
-				rowsDisp+=len(displacements(e))
-			if args.indexes or writeAll:
-				fIndexes.write(str(i)+"\n")
-			if args.displacements or writeAll:
-				lst=displacements(e)
-				for l in lst:
-					writerDisp.writerow(l)
-			if args.forceConstants or writeAll:
-				writerForce.writerow(e)
-			i+=1
-		else:
-			# Check if numbers in array total to (args.digits - 1) or greater and skip to next block
-			if sum(e) >= (args.digits - 1):
-				done = False
-				# copy the row
-				etemp = e[:]
-				# zero the right-most non-zero value
-				for idx in range(args.reps-1, -1, -1):
-					if etemp[idx] > 0:
-						etemp[idx] = 0
-						if idx > 0:
-							etemp[idx-1] = etemp[idx-1] + 1
-						else:
-							done = True
-						break
-				# translate new array into an index
-				if done:
-					i = endIndex
-				else:
-					i = 0
-					for idx in range(0, args.reps):
-						p = args.reps - idx - 1
-						i += etemp[idx] * (args.digits**p)
-			else:
-				i+=1
-			if sum(e) <= (args.digits - 1):
-				keeper = True
-
-				# if a mod check is defined, run it
-				if args.modcheck != None:
-					if args.verbose and not args.silent:
-						print "# Performing mod check"
-					passedModCheck = modCheck(e, modchecks)
-				else:
-					passedModCheck = True
-
-				# if the mod check fails, you may need to check for an Eq check
-				# Failing the mod check but passing the Eq check will get the record included
-				if not passedModCheck:
-					if args.verbose and not args.silent:
-						print '# Failed mod check'
-					if args.equivalence != None:
-						if args.verbose and not args.silent:
-							print "# Performing equivalence check"
-						passedEqCheck = eqCheck(e, eqchecks)
-						if not passedEqCheck:
-							if args.verbose and not args.silent:
-								print '# Failed equivalence check'
-							keeper = False
-					else:
-						keeper = False
-				if not keeper:
-					if args.verbose and not args.silent:
-						print '# Bad record: ' + str(e)
-					rowCount+=1
-				else:
-					if args.verbose and not args.silent:
-						print '# Good record: ' + str(e)
-					if args.summary:
-						rowsIndexes+=1
-						rowsForce+=1
-						rowsDisp+=len(displacements(e))
-					if args.indexes or writeAll:
-						fIndexes.write(str(i)+"\n")
-					if args.displacements or writeAll:
-						lst=displacements(e)
-					for l in lst:
-						writerDisp.writerow(l)
-					if args.forceConstants or writeAll:
-						writerForce.writerow(e)
-			else:
-				if args.verbose and not args.silent:
-					print '# Skipped ' + str(e) + ' due to array total greater than (args.digits - 1)'
-
-	if args.indexes or writeAll:
-		fIndexes.close()
-	if args.displacements or writeAll:
-		fDisp.close()
-	if args.forceConstants or writeAll:
-		fForce.close()
-
-	if args.summary:
-		print "Job Summary"
-		print "  Indexes: " + str(rowsIndexes)
-		print "  Force Constants: " + str(rowsForce)
-		print "  Displacements: " + str(rowsDisp)
-
-	if args.verbose and not args.silent:
-		print '# Done creating cartesion product'
-
-def main(event, startIndex, endIndex, indexes, force, disp):
-	modchecks=None
-	eqchecks=None
-
-	# Set up summary variables
-	rowsIndexes = 0
-	rowsForce = 0
-	rowsDisp = 0
-
-	# Logical error checking with config
-	if 'equivalence' in event and not 'modcheck' in event:
-		info("# Error: equivalence check defined without mod check")
-		exit(1)
-
-	# Build the array of digits
-	digits=[]
-	for i in range(0, event['digits']):
-		digits.append(i)
-	info('# Digits array: ' + str(digits))
-
-	# If mod checks are enabled, build a list of checks to be performed
-	if 'modcheck' in event:
-		modchecks=parseRanges(event['modcheck'])
-		info("# Parsed mod check " + str(event['modcheck']) + " into " + str(modchecks))
-
-	# If equivalence checks are enabled, build a list of checks to be performed
-	if 'equivalence' in event:
-		eqchecks=parseRanges(event['equivalence'])
-		info("# Parsed mod check " + str(event['equivalence']) + " into " + str(eqchecks))
-
-	# Open the output streams
-	fIndexes = open(indexes, 'w')
-	fForce = open(force, 'w')
-	writerForce = csv.writer(fForce)
-	fDisp = open(disp, 'w')
-	writerDisp = csv.writer(fDisp)
-
-	rowCount = 0
-	i=startIndex
-	while i < endIndex:
-		e=entry(i, digits, event['reps'])
-		info('# Processing index ' + str(i))
-		old_i=i
-
-		# Check if numbers in array total to (e['digits'] - 1) or greater and skip to next block
-		if sum(e) >= (event['digits'] - 1):
-			done = False
-			# copy the row
-			etemp = e[:]
-			# zero the right-most non-zero value
-			for idx in range(event['reps']-1, -1, -1):
-				if etemp[idx] > 0:
-					etemp[idx] = 0
-					if idx > 0:
-						etemp[idx-1] = etemp[idx-1] + 1
-					else:
-						done = True
-					break
-			# translate new array into an index
-			if done:
-				i = endIndex
-			else:
-				i = 0
-				for idx in range(0, event['reps']):
-					p = event['reps'] - idx - 1
-					i += etemp[idx] * (event['digits']**p)
-		else:
-			i+=1
-		if sum(e) <= (event['digits'] - 1):
-			keeper = True
-
-			# if a mod check is defined, run it
-			if 'modcheck' in event:
-				info("# Performing mod check")
-				passedModCheck = modCheck(e, modchecks)
-			else:
-				passedModCheck = True
-
-			# if the mod check fails, you may need to check for an Eq check
-			# Failing the mod check but passing the Eq check will get the record included
-			if not passedModCheck:
-				info('# Failed mod check')
-				if 'equivalence' in event:
-					info("# Performing equivalence check")
-					passedEqCheck = eqCheck(e, eqchecks)
-					if not passedEqCheck:
-						info('# Failed equivalence check')
-						keeper = False
-				else:
-					keeper = False
-			if not keeper:
-				info('# Bad record: ' + str(e))
-				rowCount+=1
-			else:
-				info('# Good record: ' + str(e))
-				fIndexes.write(str(i)+"\n")
-				lst=displacements(e)
-				for l in lst:
-					writerDisp.writerow(l)
-				writerForce.writerow(e)
-		else:
-			info('# Skipped ' + str(e) + ' due to array total greater than (e["digits"] - 1)')
-			pass
-
-	fIndexes.close()
-	fDisp.close()
-	fForce.close()
-
-	info('# Done creating cartesion product')
-
-def magic(reps, node, nodes):
-	return ((2*reps*node)**long((reps**2)/(21*math.sqrt(nodes))))
-
-
-
 # ******* Begin main program **********
+
+# set the log function
+libtaylor.setLogFunction(info)
+libtaylor.setParseRanges(parseRanges)
 
 # Set up indexes
 # If parallelization is enabled, calculate the start and end based on the node number
@@ -361,7 +89,7 @@ if args.parallel:
 		if args.verbose and not args.silent:
 			print 'First node. Setting sIndex to 0'
 	else:
-		sIndex = magic(args.reps, int(p[0]), int(p[1]))
+		sIndex = libtaylor.magic(args.reps, int(p[0]), int(p[1]))
 		if args.verbose and not args.silent:
 			print 'sIndex set to ' + str(sIndex)
 	if int(p[0]) == int(p[1]):
@@ -370,7 +98,7 @@ if args.parallel:
 		if args.verbose and not args.silent:
 			print 'Last node. eIndex set to ' + str(eIndex)
 	else:
-		eIndex = magic(args.reps, int(p[0])+1, int(p[1]))
+		eIndex = libtaylor.magic(args.reps, int(p[0])+1, int(p[1]))
 		if args.verbose and not args.silent:
 			print 'eIndex set to ' + str(eIndex)
 
@@ -400,4 +128,4 @@ if args.modcheck:
 event['digits'] = args.digits
 event['reps'] = args.reps
 
-main(event, sIndex, eIndex, 'indexes.txt', 'force.txt', 'disp.txt')
+libtaylor.main(event, sIndex, eIndex, 'indexes.txt', 'force.txt', 'disp.txt')
