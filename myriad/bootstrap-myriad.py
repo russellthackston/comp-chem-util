@@ -48,17 +48,17 @@ class Bootstrap:
 				process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 
 			if result == libmyriad.ResultCode.success:
-				print('Job completed. Checking for another job.')
+				logging.info('Job completed. Checking for another job.')
 			elif result == libmyriad.ResultCode.failure:
-				print('Job failed. Retrying in 10 seconds...')
+				logging.info('Job failed. Retrying in 10 seconds...')
 				time.sleep(10)
 			elif result == libmyriad.ResultCode.noaction:
 				# this file should be created by the start-up script or manually by the user
 				if os.path.isfile('shutdown.myriad'):
-					print('No jobs found. Shutting down...')
+					logging.info('No jobs found. Shutting down...')
 					command = "/sbin/shutdown -h now"
 					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-				print('No jobs found. Retrying in 60 seconds...')
+				logging.info('No jobs found. Retrying in 60 seconds...')
 				time.sleep(60)
 
 			if os.path.isfile('die.myriad'):
