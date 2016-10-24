@@ -142,10 +142,12 @@ def post_job_status(event, context):
 		message = str(body['Message'])[:255]
 	else:
 		message = None
+	job = event['job']
 	logger.info(machineID)
 	logger.info(executionID)
 	logger.info(status)
 	logger.info(lastUpdate)
+	logger.info(job)
 	updated = False
 	
 	try:
@@ -153,12 +155,13 @@ def post_job_status(event, context):
 			Key={
 				'ExecutionID': executionID
 			},
-			UpdateExpression="set machineID = :mac, jobStatus = :stat, lastUpdate = :last, message = :msg",
+			UpdateExpression="set machineID = :mac, jobStatus = :stat, lastUpdate = :last, message = :msg, job = :job",
 			ExpressionAttributeValues={
 				':mac' : machineID,
 				':stat': status,
 				':last' : lastUpdate,
-				':msg' : message
+				':msg' : message,
+				':job' : job
 			},
 			ReturnValues="UPDATED_NEW"
 		)
@@ -220,17 +223,21 @@ def post_job_results(event, context):
 		raise Exception('400: Missing completion date/time')
 
 	logger.info(body)
+	
+	job = event['body']['job']
+	logger.info(job)
 
 	try:
 		response = jobStatus.update_item(
 			Key={
 				'JobID': jobID
 			},
-			UpdateExpression="set JobResults = :res, SourceIP = :ip, Completed = :comp",
+			UpdateExpression="set JobResults = :res, SourceIP = :ip, Completed = :comp, job = :job",
 			ExpressionAttributeValues={
 				':res' : jobResults,
 				':ip': machineID,
-				':comp' : completed
+				':comp' : completed,
+				':job' : job
 			},
 			ReturnValues="UPDATED_NEW"
 		)
