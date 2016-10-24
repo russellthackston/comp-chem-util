@@ -54,6 +54,7 @@ This function is publicly available via API Gateway.
 }
 '''
 def get_next_job(event, context):
+	logger.info(str(event))
 	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
 
 	pending = dynamodb.Table('MaestroPendingJobs')
@@ -70,48 +71,42 @@ def get_next_job(event, context):
 			logger.info("JobCategory set to " + jobCategory)
 
 	try:
+		fe = None
 		if jobGroup != None and jobCategory != None:
-			response = pending.scan(
-				Limit=1,
-				Key={
-					'JobGroup': jobGroup,
-					'JobCategory': jobCategory
-				}
-			)
+			fe = Attr('JobGroup').eq(jobGroup) & Attr('JobCategory').eq(jobCategory)
 		elif jobGroup != None and jobCategory == None:
-			response = pending.scan(
-				Limit=1,
-				Key={
-					'JobGroup': jobGroup
-				}
-			)
+			fe = Attr('JobGroup').eq(jobGroup)
 		elif jobGroup == None and jobCategory != None:
+			fe = Attr('JobCategory').eq(jobCategory)
+		if fe != None:
+			logger.info(str(fe))
 			response = pending.scan(
-				Limit=1,
-				Key={
-					'JobCategory': jobCategory
-				}
+				FilterExpression=fe
 			)
 		else:
 			response = pending.scan(
 				Limit=1
 			)
+
 	except ClientError as e:
 		logger.info(e)
 		raise Exception('500: Database error')
 	else:
 		if len(response["Items"]) > 0:
 			item=response['Items'][0]
-			executionID = uuid.uuid4()
-			logger.info(executionID)
-			item['ExecutionID'] = str(executionID)
-			# Move the job to the 'executing jobs' table
-			response = executing.put_item(Item=item)
-			logger.info(response)
-			response = pending.delete_item(
-				Key={"JobID": item['JobID']}
-			)
-			logger.info(response)
+			if 'readonly' not in event:
+				executionID = uuid.uuid4()
+				logger.info(executionID)
+				item['ExecutionID'] = str(executionID)
+				now = datetime.datetime.now().strftime('%Y-%m-%d %I:%M:%S')
+				item['ExecutionRecordCreated'] = now
+				# Move the job to the 'executing jobs' table
+				response = executing.put_item(Item=item)
+				logger.info(response)
+				response = pending.delete_item(
+					Key={"JobID": item['JobID']}
+				)
+				logger.info(response)
 			return item
 		else:
 			raise Exception('404: No jobs found')
