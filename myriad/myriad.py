@@ -37,59 +37,51 @@ class Myriad:
                 for line in lines:
                         if line.startswith('Maestro_api_gateway '):
                                 self.maestroAPIGateway = line.split(' ')[1].strip()
-                                print('JobRunner GET endpoint set to ' + self.maestroAPIGateway)
+                                logging.info('JobRunner GET endpoint set to ' + self.maestroAPIGateway)
                         elif line.startswith('Myriad_AWS '):
                                 self.myriadJobsFolderOnAWS = line.split(' ')[1].strip()
-                                print('Myriad AWS endpoint set to ' + self.myriadJobsFolderOnAWS)
+                                logging.info('Myriad AWS endpoint set to ' + self.myriadJobsFolderOnAWS)
 
         def getJob(self, jobGroup=None, jobCategory=None):
-                print("Requesting a new job from " + str(self.maestroAPIGateway))
+                logging.info("Requesting a new job from " + str(self.maestroAPIGateway))
                 if jobGroup != None and jobCategory != None:
-                        print("Job group set to " + str(jobGroup))
-                        print("Job category set to " + str(jobCategory))
+                        logging.info("Job group set to " + str(jobGroup))
+                        logging.info("Job category set to " + str(jobCategory))
                         p = {"jobGroup": jobGroup, "jobCategory": jobCategory}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 elif jobGroup != None and jobCategory == None:
-                        print("Job group set to " + str(jobGroup))
+                        logging.info("Job group set to " + str(jobGroup))
                         p = {"jobGroup": jobGroup}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 elif jobGroup == None and jobCategory != None:
-                        print("Job category set to " + str(jobCategory))
+                        logging.info("Job category set to " + str(jobCategory))
                         p = {"jobCategory": jobCategory}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 else:
-                        print("No job group or sub group specified")
+                        logging.info("No job group or sub group specified")
                         r = requests.get(self.maestroAPIGateway)
 
                 # Check for good HTTP response
                 if r.status_code == 200:
-                        print("*** Begin get job response ***")
-                        print(r.text)
-                        print("*** End get job response ***")
+                        logging.info("*** Begin get job response ***")
+                        logging.info(r.text)
+                        logging.info("*** End get job response ***")
 
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
-                                print("Good response:\n" + str(r.text))
+                                logging.info("Good response:\n" + str(r.text))
                                 return self.parseJob(r.text)
                         else:
                                 # logic error
-                                print("Error from web service:\n" + str(r.text))
+                                logging.warn("Error from web service:\n" + str(r.text))
                                 return ResultCode.failure
                 else:
                         # HTTP error
-                        print("HTTP error: " + str(r.status_code))
+                        logging.warn("HTTP error: " + str(r.status_code))
                         return ResultCode.failure
 
         def parseJob(self, job):
                 # The response should look something like this...
-                #
-                # Old version:
-                #    # JobID: 527
-                #    # JobGUID: b4af8ced-3661-11e6-a162-12fe8751cda9
-                #    # MakeInputDatParameters: -t MTc
-                #    -1,1,-2
-                #
-		# New version:
                 #	{
 		#	  "JobID": "12345",
 		#	  "JobGroup": "NS2",
@@ -98,7 +90,7 @@ class Myriad:
 		#	  "JobDefinition": {"Displacements":"-1,-1,-2"},
 		#	  "Created": "2016-07-17 15:26:45"
 		#	}
-                print("Parsing job")
+                logging.info("Parsing job")
                 for line in job.split('\n'):
                 	parsed_json = json.loads(job)
                 	self.jobID = parsed_json['JobID']
@@ -112,14 +104,14 @@ class Myriad:
                 result = ResultCode.success
                 # download job-specific script(s) to the parent folder
                 url = self.myriadJobsFolderOnAWS + "/" + self.jobGroup + "/jobConfig.py"
-                print("Retrieving job config from " + url)
+                logging.info("Retrieving job config from " + url)
                 r = requests.get(url)
 
                 # Check for web errors (404, 500, etc.)
                 if "<html>" in r.text:
-                        print("Bad jobConfig.py")
+                        logging.warn("Bad jobConfig.py")
                         result = ResultCode.failure
-                print(r.text)
+                logging.info(r.text)
 
                 f = open("jobConfig.py", "w")
                 f.write(r.text)
@@ -129,11 +121,11 @@ class Myriad:
 
         def getSystemSpecs(self):
                 self.cpus = psutil.cpu_count()
-                print('Number of cores set to ' + str(self.cpus))
+                logging.info('Number of cores set to ' + str(self.cpus))
                 os.environ["OMP_NUM_THREADS"] = str(self.cpus)
                 os.environ["MKL_NUM_THREADS"] = str(self.cpus)
                 self.mem = psutil.virtual_memory().available
-                print('Bytes of available memory ' + str(self.mem))
+                logging.info('Bytes of available memory ' + str(self.mem))
 
         def recordDiskUsage(self):
                 myoutput = open('diskspace.out', 'w')
@@ -157,7 +149,7 @@ class Myriad:
                                         waiting = True
                                         self.postJobStatus(True, "Running")
 
-                        print("psi4 exited with exit code of " + str(exitcode))
+                        logging.info("psi4 exited with exit code of " + str(exitcode))
                         if exitcode == 0:
                                 result = ResultCode.success
                         else:
@@ -177,7 +169,7 @@ class Myriad:
                 return result
 
         def uploadResults(self):
-                print("Extracting results from output.dat")
+                logging.info("Extracting results from output.dat")
                 f = open("output.dat", "r")
                 lines = f.readlines()
                 energy = None
@@ -187,32 +179,32 @@ class Myriad:
                                 energy = energy[1].strip()
                                 break
                 f.close()
-                print("Energy = " + str(energy))
+                logging.info("Energy = " + str(energy))
                 if energy == None:
-                        print("No energy found")
+                        logging.warn("No energy found")
                         return ResultCode.noaction
 
-                print("Posting results to the web service at " + str(self.maestroAPIGateway))
+                logging.info("Posting results to the web service at " + str(self.maestroAPIGateway))
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 j = { "JobID" : self.jobGUID, "Completed" : n, "JobResults" : energy }
-                print("Job results encoded as: " + str(j))
+                logging.info("Job results encoded as: " + str(j))
                 r = requests.post(self.maestroAPIGateway, json=j)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
                         if not "errorMessage" in r.text:
-                                print("Good response:\n" + str(r.text))
+                                logging.info("Good response:\n" + str(r.text))
                         else:
                                 # logic error
-                                print("Error from web service:\n" + str(r.text))
+                                logging.warn("Error from web service:\n" + str(r.text))
                                 return ResultCode.failure
                 else:
                         # HTTP error
-                        print("HTTP error: " + str(r.status_code))
+                        logging.warn("HTTP error: " + str(r.status_code))
                         return ResultCode.failure
 
         def clearScratch(self):
-                print("Clearing the scratch folder. Some errors are normal.")
+                logging.info("Clearing the scratch folder. Some errors are normal.")
                 folder = os.environ['PSI_SCRATCH']
                 for the_file in os.listdir(folder):
                         file_path = os.path.join(folder, the_file)
@@ -222,8 +214,8 @@ class Myriad:
                                 elif os.path.isdir(file_path):
                                         shutil.rmtree(file_path)
                         except Exception as e:
-                             print(e)                
-                print("Finished clearing the scratch folder.")
+				logging.warn(e)
+                logging.info("Finished clearing the scratch folder.")
 
         def makeJobFolder(self):
                 self.jobFolder = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"+str(self.jobID))
@@ -235,7 +227,7 @@ class Myriad:
 
         def makeInputDat(self):
                 # Adjust memory value in input.dat
-                print("Calculating memory value for input.dat...")
+                logging.info("Calculating memory value for input.dat...")
                 newmem = "memory " + str(int((self.mem / self.cpus)/1000000)) + " MB"
 
                 # Creates the input.dat file in the job folder
@@ -250,17 +242,17 @@ class Myriad:
                 
                 
                         # Run Intder2005 to produce the geometries
-                        print("Running Intder2005...")
+                        logging.info("Running Intder2005...")
                         myinput = open('intder.in')
                         myoutput = open('intder.out', 'w')
                         p = subprocess.Popen("Intder2005.x", stdin=myinput, stdout=myoutput)
                         p.wait()
                         myoutput.flush()
                         myoutput.close()
-                        print("Finished running Intder2005...")
+                        logging.info("Finished running Intder2005...")
 
                         # Read the intder output and produce an input.dat file from the geometries
-                        print("Reading file07...")
+                        logging.info("Reading file07...")
                         f = open('file07')
                         file07 = f.readlines()
                         f.close
@@ -280,11 +272,11 @@ class Myriad:
                 f.write("\nprint_variables()\n")
                 f.flush()
                 f.close()
-                print("File input.dat written to disk.")
+                logging.info("File input.dat written to disk.")
 
         def postJobStatus(self, status, message=None):
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                print("Posting job status to " + str(self.maestroAPIGateway))
+                logging.info("Posting job status to " + str(self.maestroAPIGateway))
                 if status == True:
                         statusStr = "Success"
                 else:
@@ -293,11 +285,11 @@ class Myriad:
                         j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr}
                 else:
                         j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr, "Message":message}
-                print("Job status encoded as: " + str(j))
+                logging.info("Job status encoded as: " + str(j))
                 try:
                         r = requests.put(self.maestroAPIGateway, json=j)
                 except:
-                        print("Error posting status. Ignoring.")
+                        logging.warn("Error posting status. Ignoring.")
 
         def zipJobFolder(self):
                 # Get IP address
@@ -308,24 +300,24 @@ class Myriad:
                         self.ip = ""
                 
                 try:
-                        print("Compressing job folder...")
+                        logging.info("Compressing job folder...")
                         myZipFile = zipfile.ZipFile("ip_" + ip + "_" + jobFolder + ".zip", "w" )
                         listing = os.listdir(jobFolder)
                         for f in listing:
                                 myZipFile.write(jobFolder + "/" + f)
                         myZipFile.close()
-                        print("Job folder compressed. Removing original...")
+                        logging.info("Job folder compressed. Removing original...")
                         shutil.rmtree(jobFolder)
-                        print("Done removing original job folder")
+                        logging.info("Done removing original job folder")
                 except Exception as e:
-                        print("Error compressing job folder: " + str(e))
+                        logging.warn("Error compressing job folder: " + str(e))
                         
 
         # Main
         def runOnce(self, jobGroup=None, jobCategory=None, error=None):
-                print("Job group = " + str(jobGroup))
-                print("Job sub group = " + str(jobCategory))
-                print("Error = " + str(error))
+                logging.info("Job group = " + str(jobGroup))
+                logging.info("Job sub group = " + str(jobCategory))
+                logging.info("Error = " + str(error))
                 self.jobGroup = jobGroup
                 self.jobCategory = jobCategory
 
@@ -347,7 +339,7 @@ class Myriad:
                 if error == None:
                         result = self.getJob(self.jobGroup, self.jobCategory)
                 else:
-                        print("Running current job again to correct for errors")
+                        logging.info("Running current job again to correct for errors")
                         result = ResultCode.success
 
                 if result == ResultCode.success:
@@ -360,16 +352,16 @@ class Myriad:
                                 self.makeInputDat()
                                 result = self.runPsi4()
                                 if result == ResultCode.success:
-                                        print("runPsi4() returned success code")
+                                        logging.info("runPsi4() returned success code")
                                         while self.uploadResults() == ResultCode.failure:
-                                                print("Failure uploading results. Retrying in 60 seconds...")
+                                                logging.info("Failure uploading results. Retrying in 60 seconds...")
                                                 time.sleep(60)
                                 else:
                                         # Check for known error situations in output.dat
-                                        print("runPsi4() returned failure code. Checking for known errors")
+                                        logging.warn("runPsi4() returned failure code. Checking for known errors")
                                         newerror = self.jobConfig.checkError()
                                         self.postJobStatus(False, "PSI4 error: " + str(newerror))
-                                        print("CheckError() result: " + str(newerror))
+                                        logging.info("CheckError() result: " + str(newerror))
 
                                 self.closeJobFolder()
                                 self.zipJobFolder()
@@ -377,10 +369,10 @@ class Myriad:
 
                                 # if we encounter a known error, try the job again and compensate
                                 if newerror != None:
-                                        print("Re-executing job due to known error: " + str(newerror))
+                                        logging.info("Re-executing job due to known error: " + str(newerror))
                                         result = self.runOnce(self.jobGroup, self.jobCategory, newerror)
                         else:
-                                print("Error retrieving support files")
+                                logging.warn("Error retrieving support files")
 
                 else:
                         result = ResultCode.noaction
