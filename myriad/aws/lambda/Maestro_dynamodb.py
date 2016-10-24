@@ -254,21 +254,21 @@ It is publicly available to Myriad via the API gateway.
 '''
 def queue_job_status(event, context):
 	# Get Job GUID
-	if 'jobGUID' not in event:
-		raise Exception('400: Missing job GUID')
+	if 'JobID' not in event:
+		raise Exception('400: Missing job ID')
 	jobGUID = event['jobGUID']
 	if jobGUID == '':
-		raise Exception('400: Missing job GUID')
+		raise Exception('400: Missing job ID')
 
 	# Get the output file contents
-	if 'status' not in event:
+	if 'Status' not in event:
 		raise Exception('400: Missing status')
 	status = event['status']
 	if status == '':
 		raise Exception('400: Missing status')
 
 	# Get the last update date/time
-	if 'lastUpdate' not in event:
+	if 'LastUpdate' not in event:
 		raise Exception('400: Missing lastUpdate')
 	lastUpdate = event['lastUpdate']
 	if lastUpdate == '':
@@ -282,8 +282,8 @@ def queue_job_status(event, context):
 	logger.info("Obtained SQS reference from boto3. Getting the queue")
 	queue = sqs.get_queue_by_name(QueueName='MaestroSQSQueue')
 	logger.info("Queue retrieved. Sending message")
-	if 'message' in event:
-		msg = json.dumps({ "jobGUID" : jobGUID, "status" : status, "source_ip" : source_ip, "lastUpdate" : lastUpdate, "message" : event['message'] })
+	if 'Message' in event:
+		msg = json.dumps({ "jobGUID" : jobGUID, "status" : status, "source_ip" : source_ip, "lastUpdate" : lastUpdate, "message" : event['Message'] })
 	else:
 		msg = json.dumps({ "jobGUID" : jobGUID, "status" : status, "source_ip" : source_ip, "lastUpdate" : lastUpdate })
 	logger.info(msg)
