@@ -27,6 +27,7 @@ class Myriad:
                 self.jobFolder = None
                 self.errors = []
                 self.ip = None
+                self.jobConfig = None
 
         def loadEndpoints(self):
                 # Load the configuration values from file
@@ -239,8 +240,8 @@ class Myriad:
 
                 # Creates the input.dat file in the job folder
                 from jobConfig import JobConfig
-                j = JobConfig()
-                intder = j.intderIn(self.displacements)
+                self.jobConfig = JobConfig()
+                intder = self.jobConfig.intderIn(self.displacements)
                 if intder != None:
                         f = open('intder.in', 'w')
                         f.write(intder)
@@ -267,9 +268,9 @@ class Myriad:
                         file07 = None
 
                 if len(self.errors) > 0:
-                        inputdat = j.inputDat(newmem, self.makeInputDatParameters, file07, self.errors[-1])
+                        inputdat = self.jobConfig.inputDat(newmem, self.makeInputDatParameters, file07, self.errors[-1])
                 else:
-                        inputdat = j.inputDat(newmem, self.makeInputDatParameters, file07)
+                        inputdat = self.jobConfig.inputDat(newmem, self.makeInputDatParameters, file07)
 
                 # Write input.dat contents to file
                 f=open('input.dat', 'w')
@@ -298,35 +299,10 @@ class Myriad:
                 except:
                         print("Error posting status. Ignoring.")
 
-        def checkError(self):
-                print("Opening output.dat...")
-                f = open("output.dat", "r")
-                lines = f.readlines()
-                f.close()
-
-                error = None
-                for line in reversed(lines):
-                        if "Failed to converge." in line:
-                                print("Found a 'Failed to converge.' error")
-                                error = "Failed to converge."
-                        elif error == "Failed to converge." and " iter " in line:
-                                # split the line into columns and only look at the Delta E value (fifth column)
-                                chunks = line.split()
-                                
-                                if "e-12" in chunks[4]:
-                                        print("Found a 'Failed to converge. (12)' error")
-                                        error = "Failed to converge. (12)"
-                                if "e-13" in chunks[4]:
-                                        print("Found a 'Failed to converge. (13)' error")
-                                        error = "Failed to converge. (13)"
-                                break
-                print("Returning error: " + str(error))
-                return error
-        
         def zipJobFolder(self):
                 # Get IP address
                 f = open('ip.txt')
-                self.ip = f.readLine()
+                self.ip = f.readline()
                 f.close()
                 if self.ip == None:
                         self.ip = ""
@@ -391,7 +367,7 @@ class Myriad:
                                 else:
                                         # Check for known error situations in output.dat
                                         print("runPsi4() returned failure code. Checking for known errors")
-                                        newerror = self.checkError()
+                                        newerror = self.jobConfig.checkError()
                                         self.postJobStatus(False, "PSI4 error: " + str(newerror))
                                         print("CheckError() result: " + str(newerror))
 
