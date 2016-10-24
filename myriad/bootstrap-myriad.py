@@ -13,11 +13,9 @@ import time
 
 class Bootstrap:
 
-	self.server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
-	self.version = '1.0'
-
 	def __init__(self):
-		pass
+		self.server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
+		self.version = '1.0'
 
 	def downloadMyriad(self):
 		self.downloadMyriadFile('libmyriad.py')
