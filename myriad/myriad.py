@@ -45,7 +45,7 @@ class Myriad:
                 print("Requesting a new job from " + str(self.maestroAPIGateway))
                 if jobGroup != None and jobCategory != None:
                         print("Job group set to " + str(jobGroup))
-                        print("Job sub group set to " + str(jobCategory))
+                        print("Job category set to " + str(jobCategory))
                         p = {"jobGroup": jobGroup, "jobCategory": jobCategory}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 elif jobGroup != None and jobCategory == None:
@@ -53,7 +53,7 @@ class Myriad:
                         p = {"jobGroup": jobGroup}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 elif jobGroup == None and jobCategory != None:
-                        print("Job sub group set to " + str(jobCategory))
+                        print("Job category set to " + str(jobCategory))
                         p = {"jobCategory": jobCategory}
                         r = requests.get(self.maestroAPIGateway, params=p)
                 else:
@@ -194,6 +194,7 @@ class Myriad:
                 print("Posting results to the web service at " + str(self.maestroAPIGateway))
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 j = { "JobID" : self.jobGUID, "Completed" : n, "JobResults" : energy }
+                print("Job results encoded as: " + str(j))
                 r = requests.post(self.maestroAPIGateway, json=j)
                 # Check for good HTTP response
                 if r.status_code == 200:
@@ -291,6 +292,7 @@ class Myriad:
                         j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr}
                 else:
                         j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr, "Message":message}
+                print("Job status encoded as: " + str(j))
                 try:
                         r = requests.put(self.maestroAPIGateway, json=j)
                 except:
