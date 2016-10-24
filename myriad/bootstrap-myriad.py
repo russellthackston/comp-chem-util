@@ -31,8 +31,8 @@ class Bootstrap:
 		f.close()
 
 	def run(self, jobGroup=None, jobCategory=None):
-		print("Job group = " + str(jobGroup))
-		print("Job category = " + str(jobCategory))
+		logging.info("Job group = " + str(jobGroup))
+		logging.info("Job category = " + str(jobCategory))
 		result = libmyriad.ResultCode.success
 		while(True):
 
