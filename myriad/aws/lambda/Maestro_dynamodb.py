@@ -94,7 +94,7 @@ def get_next_job(event, context):
 	else:
 		if len(response["Items"]) > 0:
 			item=response['Items'][0]
-			if 'readonly' not in event:
+			if 'readonly' not in event or event['readonly'] == '':
 				executionID = uuid.uuid4()
 				logger.info(executionID)
 				item['ExecutionID'] = str(executionID)
