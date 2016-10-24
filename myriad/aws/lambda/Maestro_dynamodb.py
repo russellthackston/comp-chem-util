@@ -224,7 +224,7 @@ def post_job_results(event, context):
 
 	logger.info(body)
 	
-	job = event['body']['job']
+	job = body['job']
 	logger.info(job)
 
 	try:

@@ -21,14 +21,15 @@ class Myriad:
 		self.mem = 1
 		self.displacements = None
 		self.jobID = None
-		self.jobGUID = None
+		self.executionID = None
 		self.jobGroup = None
 		self.jobCategory = None
-		self.makeInputDatParameters = None
+		self.jobCategory = None
 		self.jobFolder = None
 		self.errors = []
 		self.ip = None
 		self.jobConfig = None
+		self.parsedJob = None
 
 	def loadEndpoints(self):
 		# Load the configuration values from file
@@ -92,13 +93,12 @@ class Myriad:
 		#	  "Created": "2016-07-17 15:26:45"
 		#	}
 		logging.info("Parsing job")
-		for line in job.split('\n'):
-			parsed_json = json.loads(job)
-			self.jobID = parsed_json['JobID']
-			self.jobGUID = parsed_json['JobID']
-			self.jobGroup = parsed_json['JobGroup']
-			self.makeInputDatParameters = parsed_json['JobCategory']
-			self.displacements = parsed_json['JobDefinition']['Displacements']
+		self.parsedJob = json.loads(job)
+		self.jobID = self.parsedJob['JobID']
+		self.executionID = self.parsedJob['ExecutionID']
+		self.jobGroup = self.parsedJob['JobGroup']
+		self.jobCategory = self.parsedJob['JobCategory']
+		self.displacements = self.parsedJob['JobDefinition']['Displacements']
 		return ResultCode.success
 
 	def getJobSupportFiles(self):
@@ -187,7 +187,7 @@ class Myriad:
 
 		logging.info("Posting results to the web service at " + str(self.maestroAPIGateway))
 		n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-		j = { "JobID" : self.jobGUID, "Completed" : n, "JobResults" : energy }
+		j = { "JobID" : self.jobID, "Completed" : n, "JobResults" : energy, "job" : self.parsedJob }
 		logging.info("Job results encoded as: " + str(j))
 		r = requests.post(self.maestroAPIGateway, json=j)
 		# Check for good HTTP response
@@ -261,9 +261,9 @@ class Myriad:
 			file07 = None
 
 		if len(self.errors) > 0:
-			inputdat = self.jobConfig.inputDat(newmem, self.makeInputDatParameters, file07, self.errors[-1])
+			inputdat = self.jobConfig.inputDat(newmem, self.jobCategory, file07, self.errors[-1])
 		else:
-			inputdat = self.jobConfig.inputDat(newmem, self.makeInputDatParameters, file07)
+			inputdat = self.jobConfig.inputDat(newmem, self.jobCategory, file07)
 
 		# Write input.dat contents to file
 		f=open('input.dat', 'w')
@@ -283,9 +283,9 @@ class Myriad:
 		else:
 			statusStr = "Failure"
 		if message == None:
-			j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr}
+			j = { "ExecutionID" : self.executionID, "LastUpdate":n, "Status":statusStr, "job" : self.parsedJob }
 		else:
-			j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr, "Message":message}
+			j = { "JobID" : self.jobID, "LastUpdate":n, "Status":statusStr, "Message":message, "job" : self.parsedJob }
 		logging.info("Job status encoded as: " + str(j))
 		try:
 			r = requests.put(self.maestroAPIGateway, json=j)
