@@ -315,6 +315,7 @@ class Myriad:
 
 	# Main
 	def runOnce(self, jobGroup=None, jobCategory=None, error=None):
+		logging.info("Myriad.runOnce invoked...")
 		logging.info("Job group = " + str(jobGroup))
 		logging.info("Job sub group = " + str(jobCategory))
 		logging.info("Error = " + str(error))
