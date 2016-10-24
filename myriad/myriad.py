@@ -193,9 +193,8 @@ class Myriad:
 
                 print("Posting results to the web service at " + str(self.maestroAPIGateway))
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                p = { "jobGUID" : self.jobGUID }
-                j = { "completed" : n, "jobResults" : energy }
-                r = requests.post(self.maestroAPIGateway, params=p, json=j)
+                j = { "JobID" : self.jobGUID, "Completed" : n, "JobResults" : energy }
+                r = requests.post(self.maestroAPIGateway, json=j)
                 # Check for good HTTP response
                 if r.status_code == 200:
                         # Check for logical error in response
@@ -284,32 +283,18 @@ class Myriad:
         def postJobStatus(self, status, message=None):
                 n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print("Posting job status to " + str(self.maestroAPIGateway))
-                p = { "jobGUID" : self.jobGUID }
                 if status == True:
                         statusStr = "Success"
                 else:
                         statusStr = "Failure"
                 if message == None:
-                        j = {"lastUpdate":n,"status":statusStr}
+                        j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr}
                 else:
-                        j = {"lastUpdate":n,"status":statusStr,"message":message}
+                        j = { "JobID" : self.jobGUID, "LastUpdate":n, "Status":statusStr, "Message":message}
                 try:
-                        r = requests.put(self.maestroAPIGateway, params=p, json=j)
+                        r = requests.put(self.maestroAPIGateway, json=j)
                 except:
                         print("Error posting status. Ignoring.")
-                '''
-                # Check for good HTTP response
-                if r.status_code == 200:
-                        # Check for logical error in response
-                        if not "errorMessage" in r.text:
-                                print("Good response:\n" + str(r.text))
-                        else:
-                                # logic error
-                                print("Error from web service:\n" + str(r.text))
-                else:
-                        # HTTP error
-                        print("HTTP error: " + str(r.status_code))
-                '''
 
         def checkError(self):
                 print("Opening output.dat...")
