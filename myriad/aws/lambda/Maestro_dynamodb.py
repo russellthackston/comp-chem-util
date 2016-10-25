@@ -135,12 +135,12 @@ def post_job_status(event, context):
 	machineID = str(event['source-ip'])[:15]
 
 	body = event['body']
-	executionID = str(body['ExecutionID'])
+	job = body['job']
+	executionID = str(job['ExecutionID'])
 	status = str(body['Status'])
 	lastUpdate = str(body['LastUpdate'])
-	job = body['job']
 	if 'Message' in body:
-		message = str(job['Message'])
+		message = str(body['Message'])
 	else:
 		message = None
 	logger.info(machineID)
@@ -159,7 +159,7 @@ def post_job_status(event, context):
 			ExpressionAttributeValues={
 				':mac' : machineID,
 				':stat': status,
-				':last' : lastUpdate,
+				':last': lastUpdate,
 				':msg' : message,
 				':job' : job
 			},
@@ -191,7 +191,9 @@ It is invoked by the Maestro.dequeue_job_status_results() function.
 def post_job_results(event, context):
 	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
 
-	jobStatus = dynamodb.Table('MaestroJobResults')
+	jobResultsTable = dynamodb.Table('MaestroJobResults')
+	executing = dynamodb.Table('MaestroExecutingJobs')
+	jobStatus = dynamodb.Table('MaestroJobStatus')
 
 	# Get the source ip address
 	if 'source-ip' not in event:
@@ -228,7 +230,7 @@ def post_job_results(event, context):
 	logger.info(job)
 
 	try:
-		response = jobStatus.update_item(
+		response = jobResultsTable.update_item(
 			Key={
 				'JobID': jobID
 			},
@@ -241,6 +243,13 @@ def post_job_results(event, context):
 			},
 			ReturnValues="UPDATED_NEW"
 		)
+		response = executing.delete_item(
+			Key={"ExecutionID": job['ExecutionID']}
+		)
+		response = jobStatus.delete_item(
+			Key={"ExecutionID": job['ExecutionID']}
+		)
+
 	
 	except ClientError as e:
 		logger.info(e)
