@@ -58,7 +58,7 @@ class Bootstrap:
 				# Or it may be created by Myriad if it detects a Spot Instance being terminated
 				if os.path.isfile('shutdown.myriad'):
 					logging.info('Shutdown requested...')
-					command = "/sbin/shutdown -h +2"
+					command = "/sbin/shutdown -h +1"
 					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 				logging.info('No jobs found. Retrying in 60 seconds...')
 				time.sleep(60)
