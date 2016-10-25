@@ -365,14 +365,47 @@ def dequeue_job_status_results(event, context):
 		for message in messages:
 			logger.info("Processing message: " + message.body)
 
-			# {"jobResults": "-850.131671682245", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167", "completed": "2016-06-16 22:55:10"}
-			# {"status": "Success", "source_ip": "184.72.213.192", "jobGUID": "28088fab-39bd-11e6-8a19-1285a2525167", "message" : "Hello" }
+			'''
+			# {'JobID': 'c6769a95-968e-4ce1-8567-6a9202b3c9e8', 
+				'Completed': '2016-10-24 19:25:27', 
+				'JobResults': '-94.822753307632', 
+				'job': {
+					'Created': '2016-10-24 02:32:14', 
+					'JobDefinition': {
+						'Displacements': '0,0,0,0,0,0,0,-3,-1,0,0,0'}, 
+						'ExecutionID': 'aa9377ea-96a4-42df-b177-6106fca951ce', 
+						'JobGroup': 'CH2NH2', 
+						'JobID': 'c6769a95-968e-4ce1-8567-6a9202b3c9e8', 
+						'ExecutionRecordCreated': '2016-10-24 07:19:40', 
+						'JobName': 'CH2NH2-TZ-202', 
+						'JobCategory': 'TZ'
+				}
+			}
+			# {'JobID': 'c6769a95-968e-4ce1-8567-6a9202b3c9e8', 
+				'Message': 'Running', 
+				'job': {
+					'Created': '2016-10-24 02:32:14', 
+					'JobDefinition': {
+						'Displacements': '0,0,0,0,0,0,0,-3,-1,0,0,0'
+					}, 
+					'ExecutionID': 'aa9377ea-96a4-42df-b177-6106fca951ce', 
+					'JobGroup': 'CH2NH2', 
+					'JobID': 'c6769a95-968e-4ce1-8567-6a9202b3c9e8', 
+					'ExecutionRecordCreated': '2016-10-24 07:19:40', 
+					'JobName': 'CH2NH2-TZ-202', 
+					'JobCategory': 'TZ'
+				}, 
+				'LastUpdate': '2016-10-24 19:24:41', 
+				'Status': 'Success'
+			}
+			'''
+
 			msg = json.loads(message.body)
 			logger.info(str(msg))
 
-			if 'jobResults' in msg:
+			if 'JobResults' in msg:
 				functionName = "MaestroPostJobResults_DDB"
-			elif 'status' in msg:
+			elif 'Status' in msg:
 				functionName = "MaestroPostJobStatus_DDB"
 
 			logger.info("Calling database Lambda function " + functionName)
