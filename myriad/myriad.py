@@ -113,7 +113,7 @@ class Myriad:
 		if "<html>" in r.text:
 			logging.warn("Bad jobConfig.py")
 			result = ResultCode.failure
-		logging.info(r.text)
+		# logging.info(r.text)
 
 		f = open("jobConfig.py", "w")
 		f.write(r.text)
