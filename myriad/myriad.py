@@ -303,13 +303,13 @@ class Myriad:
 		
 		try:
 			logging.info("Compressing job folder...")
-			myZipFile = zipfile.ZipFile("ip_" + self.ip + "_" + jobFolder + ".zip", "w" )
-			listing = os.listdir(jobFolder)
+			myZipFile = zipfile.ZipFile("ip_" + self.ip + "_" + self.jobFolder + ".zip", "w" )
+			listing = os.listdir(self.jobFolder)
 			for f in listing:
-				myZipFile.write(jobFolder + "/" + f)
+				myZipFile.write(self.jobFolder + "/" + f)
 			myZipFile.close()
 			logging.info("Job folder compressed. Removing original...")
-			shutil.rmtree(jobFolder)
+			shutil.rmtree(self.jobFolder)
 			logging.info("Done removing original job folder")
 		except Exception as e:
 			logging.warn("Error compressing job folder: " + str(e))
