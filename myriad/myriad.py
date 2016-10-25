@@ -5,6 +5,7 @@ import logging
 import multiprocessing
 import os
 import psutil
+import re
 import requests
 import shutil
 import subprocess
@@ -133,6 +134,19 @@ class Myriad:
 		df = subprocess.Popen("df", stdout=myoutput)
 		myoutput.flush()
 		myoutput.close()
+		
+	def shutdownMyriad(self):
+		if os.path.isfile('shutdown.myriad'):
+			return True
+		r = requests.get('http://169.254.169.254/latest/meta-data/spot/termination-time')
+		if r.status_code == 200:
+			if re.search('.*T.*Z', r.text):
+				f = open('shutdown.myriad', 'w')
+				f.write(' ')
+				f.flush()
+				f.close()
+				return True
+		return False
 
 	def runPsi4(self):
 		result = ResultCode.success
@@ -143,19 +157,34 @@ class Myriad:
 			self.postJobStatus(True, "Started")
 			p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
 			waiting = True
+			waitCounter = 0
+			shutdown = False
 			while waiting:
 				try:
-					exitcode = p.wait(300)
+					exitcode = p.wait(5)
 					waiting = False
 				except subprocess.TimeoutExpired:
 					waiting = True
-					self.postJobStatus(True, "Running")
+					waitCount += 1
+					if self.shutdownMyriad():
+						p.kill()
+						self.postJobStatus(True, "Terminated")
+						exitcode = 1
+						shutdown = True
+						waiting = False
+					else:
+						if waitCount == 60:
+							waitCount = 0
+							self.postJobStatus(True, "Running")
 
 			logging.info("psi4 exited with exit code of " + str(exitcode))
 			if exitcode == 0:
 				result = ResultCode.success
 			else:
-				result = ResultCode.failure
+				if shutdown:
+					result = ResultCode.shutdown
+				else:
+					result = ResultCode.failure
 
 		except RuntimeError as e:
 			self.postJobStatus(False, str(e))
