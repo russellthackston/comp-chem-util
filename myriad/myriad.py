@@ -140,6 +140,7 @@ class Myriad:
 		myerror = open('psi4.err', 'w')
 		exitcode = 0
 		try:
+			self.postJobStatus(True, "Started")
 			p = subprocess.Popen("psi4", stdout=myoutput, stderr=myerror)
 			waiting = True
 			while waiting:
