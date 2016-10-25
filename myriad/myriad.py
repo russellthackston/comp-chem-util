@@ -136,11 +136,14 @@ class Myriad:
 		myoutput.close()
 		
 	def shutdownMyriad(self):
+		logging.info("shutdownMyriad() invoked")
 		if os.path.isfile('shutdown.myriad'):
+			logging.info('shutdownMyriad() found shutdown file. Returning True')
 			return True
 		r = requests.get('http://169.254.169.254/latest/meta-data/spot/termination-time')
 		if r.status_code == 200:
 			if re.search('.*T.*Z', r.text):
+				logging.info('shutdownMyriad() determined that AWS is terminating this spot instance. Returning True')
 				f = open('shutdown.myriad', 'w')
 				f.write(' ')
 				f.flush()
@@ -162,10 +165,11 @@ class Myriad:
 			while waiting:
 				try:
 					exitcode = p.wait(5)
+					logging.info("Call to p.wait() completed")
 					waiting = False
 				except subprocess.TimeoutExpired:
 					waiting = True
-					waitCount += 1
+					waitCounter = waitCounter + 1
 					if self.shutdownMyriad():
 						p.kill()
 						self.postJobStatus(True, "Terminated")
@@ -173,8 +177,8 @@ class Myriad:
 						shutdown = True
 						waiting = False
 					else:
-						if waitCount == 60:
-							waitCount = 0
+						if waitCounter == 60:
+							waitCounter = 0
 							self.postJobStatus(True, "Running")
 
 			logging.info("psi4 exited with exit code of " + str(exitcode))
@@ -182,6 +186,7 @@ class Myriad:
 				result = ResultCode.success
 			else:
 				if shutdown:
+					logging.info('Setting result code to ResultCode.shutdown')
 					result = ResultCode.shutdown
 				else:
 					result = ResultCode.failure
