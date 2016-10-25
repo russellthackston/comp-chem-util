@@ -302,7 +302,7 @@ class Myriad:
 		
 		try:
 			logging.info("Compressing job folder...")
-			myZipFile = zipfile.ZipFile("ip_" + ip + "_" + jobFolder + ".zip", "w" )
+			myZipFile = zipfile.ZipFile("ip_" + self.ip + "_" + jobFolder + ".zip", "w" )
 			listing = os.listdir(jobFolder)
 			for f in listing:
 				myZipFile.write(jobFolder + "/" + f)
