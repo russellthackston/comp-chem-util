@@ -41,10 +41,11 @@ class Bootstrap:
 			result = m.runOnce(jobGroup, jobCategory)
 
 			# Upload job folder(s) to S3 and delete for local drive
-			if glob.glob("*.zip"):
-				command = "aws s3 cp *.zip s3://myriaddropbox/"
+			zips = glob.glob("*.zip")
+			for zip in zips:
+				command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
 				process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-				command = "rm -Rf *.zip"
+				command = "rm " + str(zip)
 				process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 
 			if result == libmyriad.ResultCode.success:
@@ -54,9 +55,10 @@ class Bootstrap:
 				time.sleep(10)
 			elif result == libmyriad.ResultCode.noaction:
 				# this file should be created by the start-up script or manually by the user
+				# Or it may be created by Myriad if it detects a Spot Instance being terminated
 				if os.path.isfile('shutdown.myriad'):
-					logging.info('No jobs found. Shutting down...')
-					command = "/sbin/shutdown -h now"
+					logging.info('Shutdown requested...')
+					command = "/sbin/shutdown -h +2"
 					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 				logging.info('No jobs found. Retrying in 60 seconds...')
 				time.sleep(60)
