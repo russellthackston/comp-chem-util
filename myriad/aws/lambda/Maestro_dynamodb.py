@@ -138,11 +138,11 @@ def post_job_status(event, context):
 	executionID = str(body['ExecutionID'])
 	status = str(body['Status'])
 	lastUpdate = str(body['LastUpdate'])
+	job = body['job']
 	if 'Message' in body:
-		message = str(body['Message'])[:255]
+		message = str(job['Message'])
 	else:
 		message = None
-	job = event['job']
 	logger.info(machineID)
 	logger.info(executionID)
 	logger.info(status)
