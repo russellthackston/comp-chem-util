@@ -18,10 +18,15 @@ logger.setLevel(logging.INFO)
 '''
 event = { "digits" : 5, "reps" : 12, "start" : 1, "end" : 125, "modcheck" : [{ "checkvalue" : 2, "ranges" : [{"start" : 6, "end" : 9}, {"start" : 10, "end" : 11}, {"start" : 12, "end" : 12}] }], "equivalence" : [{ "checkvalue" : 3, "ranges" : [{"start" : 6, "end" : 9}, {"start" : 10, "end" : 11}, {"start" : 12, "end" : 12}] }], "parallel" : { "node" : 5, "nodes" : 100 } }
 event = { "digits" : 5, "reps" : 12, "modcheck" : [{ "checkvalue" : 2, "ranges" : [{"start" : 6, "end" : 9}, {"start" : 10, "end" : 11}, {"start" : 12, "end" : 12}] }], "equivalence" : [{ "checkvalue" : 3, "ranges" : [{"start" : 6, "end" : 9}, {"start" : 10, "end" : 11}, {"start" : 12, "end" : 12}] }] }
+event = { "digits" : 5, "reps" : 12, "verbose" : "true" }
 '''
 
+verbose = False
+
 def info(msg):
-	logger.info(msg)
+	global verbose
+	if verbose:
+		logger.info(msg)
 
 def parseRanges(rangeobj):
 	# [{ "checkvalue" : 2, "ranges" : [{"start" : 6, "end" : 9}, {...}, {...}] }, {...}]
@@ -43,17 +48,14 @@ def handler(event, context):
 	libtaylor.setLogFunction(info)
 	libtaylor.setParseRanges(parseRanges)
 
-	info(event)
+	info("Event: " + str(event))
 	for record in event['Records']:
 		bucket = record['s3']['bucket']['name']
-		#info(bucket)
 		key = record['s3']['object']['key']
-		#info(key)
 		download_path = '/tmp/{}{}'.format(uuid.uuid4(), key.replace('/','-'))
 		upload_path_indexes = '/tmp/{}{}'.format(key.replace('/','-'), '.indexes')
 		upload_path_force = '/tmp/{}{}'.format(key.replace('/','-'), '.force')
 		upload_path_disp = '/tmp/{}{}'.format(key.replace('/','-'), '.disp')
-		#info(download_path)
 		s3_client.download_file(bucket, key, download_path)
 		f = open(download_path)
         	e = f.readlines()
@@ -65,7 +67,10 @@ def handler(event, context):
         	s3_client.upload_file(upload_path_disp, '{}'.format(bucket), '{}{}'.format(key, '.disp'))
 
 def processRecord(event, indexes, force, disp):
+	global verbose
 	e = json.loads(event)
+	if 'verbose' in e and e['verbose'] == 'true':
+		verbose = True
 	if 'parallel' in e:
 		info('Calculating parallelization values')
 		p = e['parallel']
@@ -96,4 +101,4 @@ def processRecord(event, indexes, force, disp):
 	info("sIndex="+str(sIndex))
 	info("eIndex="+str(eIndex))
 
-	main(e, sIndex, eIndex, indexes, force, disp)
+	libtaylor.main(e, sIndex, eIndex, indexes, force, disp)
