@@ -137,14 +137,14 @@ class Myriad:
 		
 	def shutdownMyriad(self):
 		logging.info("shutdownMyriad() invoked")
-		if os.path.isfile('shutdown.myriad'):
+		if os.path.isfile('../shutdown.myriad'):
 			logging.info('shutdownMyriad() found shutdown file. Returning True')
 			return True
 		r = requests.get('http://169.254.169.254/latest/meta-data/spot/termination-time')
 		if r.status_code == 200:
 			if re.search('.*T.*Z', r.text):
 				logging.info('shutdownMyriad() determined that AWS is terminating this spot instance. Returning True')
-				f = open('shutdown.myriad', 'w')
+				f = open('../shutdown.myriad', 'w')
 				f.write(' ')
 				f.flush()
 				f.close()
@@ -394,15 +394,17 @@ class Myriad:
 						logging.info("Failure uploading results. Retrying in 60 seconds...")
 						time.sleep(60)
 				else:
-					# Check for known error situations in output.dat
-					logging.warn("runPsi4() returned failure code. Checking for known errors")
-					newerror = self.jobConfig.checkError()
-					self.postJobStatus(False, "PSI4 error: " + str(newerror))
-					logging.info("CheckError() result: " + str(newerror))
+					if result != ResultCode.shutdown:
+						# Check for known error situations in output.dat
+						logging.warn("runPsi4() returned failure code. Checking for known errors")
+						newerror = self.jobConfig.checkError()
+						self.postJobStatus(False, "PSI4 error: " + str(newerror))
+						logging.info("CheckError() result: " + str(newerror))
 
 				self.closeJobFolder()
-				self.zipJobFolder()
-				self.clearScratch()
+				if result != ResultCode.shutdown:
+					self.zipJobFolder()
+					self.clearScratch()
 
 				# if we encounter a known error, try the job again and compensate
 				if newerror != None:
