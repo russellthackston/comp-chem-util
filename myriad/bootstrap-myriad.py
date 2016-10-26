@@ -40,16 +40,17 @@ class Bootstrap:
 			m = myriad.Myriad()
 			result = m.runOnce(jobGroup, jobCategory)
 
-			# Upload job folder(s) to S3 and delete for local drive
-			zips = glob.glob("*.zip")
-			for zip in zips:
-				command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
-				process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-				command = "rm " + str(zip)
-				process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-
-			if result == libmyriad.ResultCode.success:
-				logging.info('Job completed. Checking for another job.')
+			if result == libmyriad.ResultCode.shutdown:
+				logging.info('Shutting down myriad...')
+			elif result == libmyriad.ResultCode.success:
+				# If success, upload job folder(s) to S3 and delete for local drive
+				logging.info('Job completed. Zipping output files')
+				zips = glob.glob("*.zip")
+				for zip in zips:
+					command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
+					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+					command = "rm " + str(zip)
+					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 			elif result == libmyriad.ResultCode.failure:
 				logging.info('Job failed. Retrying in 10 seconds...')
 				time.sleep(10)
@@ -63,7 +64,7 @@ class Bootstrap:
 				logging.info('No jobs found. Retrying in 60 seconds...')
 				time.sleep(60)
 
-			if os.path.isfile('die.myriad'):
+			if os.path.isfile('die.myriad') or os.path.isfile('shutdown.myriad'):
 				return
 			while os.path.isfile('pause.myriad'):
 				time.sleep(5)
