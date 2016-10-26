@@ -46,7 +46,6 @@ export PSI_SCRATCH=/mnt/scratch
 
 # comment this line if you do not want the instance to be self-terminating when the jobs run out
 #touch die.myriad
-#touch exited.myriad
 #touch pause.myriad
 #touch shutdown.myriad
 
@@ -63,13 +62,16 @@ while [ true ]; do
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?"
         
-        while [ -f exited.psi4 ]; do
-                # delete the exited.psi4 file to restart Myriad
+        while [ -f pause.myriad ]; do
+                # delete the pause.myriad file to restart Myriad
                 sleep 10
         done
 
-        # To end Myriad, create a die.psi4 file and delete the exited.psi4 file 
-        if [ -f die.psi4 ]; then
+        # To end Myriad, create a die.myriad or shutdown.myriad file and delete the pause.myriad file 
+        if [ -f die.myriad ]; then
+                exit 0
+        fi
+        if [ -f shutdown.myriad ]; then
                 exit 0
         fi
 done
