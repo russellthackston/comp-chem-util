@@ -69,6 +69,10 @@ def get_next_job(event, context):
 		if event['jobCategory'] != "":
 			jobCategory = event['jobCategory']
 			logger.info("JobCategory set to " + jobCategory)
+	if 'source-ip' in event:
+		machineID = str(event['source-ip'])[:15]
+	else:
+		machineID = "Unknown"
 
 	try:
 		lastEvaluatedKey = None
@@ -123,6 +127,7 @@ def get_next_job(event, context):
 				item['ExecutionID'] = str(executionID)
 				now = datetime.datetime.now().strftime('%Y-%m-%d %I:%M:%S')
 				item['ExecutionRecordCreated'] = now
+				item['SourceIP'] = machineID
 				# Move the job to the 'executing jobs' table
 				response = executing.put_item(Item=item)
 				logger.info(response)
