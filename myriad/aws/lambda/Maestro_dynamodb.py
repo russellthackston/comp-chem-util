@@ -556,6 +556,10 @@ def get_job_count(event, context):
 	else:
 		tables = [dynamodb.Table('MaestroPendingJobs'), dynamodb.Table('MaestroExecutingJobs'), dynamodb.Table('MaestroJobResults')]
 
+	fe = None
+	if 'group' in event:
+		fe = Attr('JobGroup').eq(event['group'])
+
 	total = 0
 	for tbl in tables:
 		try:
@@ -563,15 +567,29 @@ def get_job_count(event, context):
 			count = 0
 			while True:
 				if lastEvaluatedKey == None:
-					response = tbl.scan(
-						Select='COUNT'
-					)
+					if fe == None:
+						response = tbl.scan(
+							Select='COUNT'
+						)
+					else:
+						response = tbl.scan(
+							Select='COUNT',
+							FilterExpression=fe
+						)
 					logger.info(response)
 				else:
-					response = tbl.scan(
-						Select='COUNT',
-						ExclusiveStartKey=lastEvaluatedKey
-					)
+					if fe == None:
+						response = tbl.scan(
+							Select='COUNT',
+							ExclusiveStartKey=lastEvaluatedKey
+						)
+					else:
+						response = tbl.scan(
+							Select='COUNT',
+							ExclusiveStartKey=lastEvaluatedKey,
+							FilterExpression=fe
+						)
+
 				count += response['Count']
 				if 'LastEvaluatedKey' in response:
 					lastEvaluatedKey = response['LastEvaluatedKey']
