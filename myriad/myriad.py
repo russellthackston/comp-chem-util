@@ -31,6 +31,7 @@ class Myriad:
 		self.ip = None
 		self.jobConfig = None
 		self.parsedJob = None
+		self.jobStarted = None
 
 	def loadEndpoints(self):
 		# Load the configuration values from file
@@ -152,6 +153,7 @@ class Myriad:
 		return False
 
 	def runPsi4(self):
+		self.jobStarted = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 		result = ResultCode.success
 		myoutput = open('psi4.out', 'w')
 		myerror = open('psi4.err', 'w')
@@ -222,7 +224,7 @@ class Myriad:
 
 		logging.info("Posting results to the web service at " + str(self.maestroAPIGateway))
 		n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-		j = { "JobID" : self.jobID, "Completed" : n, "JobResults" : energy, "job" : self.parsedJob }
+		j = { "JobID" : self.jobID, "Started" : self.jobStarted, "Completed" : n, "JobResults" : energy, "job" : self.parsedJob }
 		logging.info("Job results encoded as: " + str(j))
 		r = requests.post(self.maestroAPIGateway, json=j)
 		# Check for good HTTP response
