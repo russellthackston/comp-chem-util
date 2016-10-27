@@ -34,9 +34,8 @@ curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
 mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> startup-myriad.log
 
 # Download the credentials for the AWS CLI
-curl -o config $MYRIAD_AWS/config &>> startup-myriad.log
-mkdir .aws
-mv config .aws/ &>> startup-myriad.log
+mkdir .aws &>> startup-myriad.log
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/S3FullAccess > ~/.aws/config &>> startup-myriad.log
 
 # Setup the scratch space for psi4
 mkfs -t ext3 /dev/sdb &>> startup-myriad.log
