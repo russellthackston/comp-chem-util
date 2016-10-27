@@ -544,41 +544,105 @@ This function is publicly available via API Gateway.
 def get_job_count(event, context):
 	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
 
+	tables = []
+	result = {}
 	if 'type' in event:
 		if event['type'] == 'pending':
-			table = dynamodb.Table('MaestroPendingJobs')		
+			tables = [dynamodb.Table('MaestroPendingJobs')]
 		if event['type'] == 'executing':
-			table = dynamodb.Table('MaestroExecutingJobs')		
+			tables = [dynamodb.Table('MaestroExecutingJobs')]
 		if event['type'] == 'results':
-			table = dynamodb.Table('MaestroJobResults')		
+			tables = [dynamodb.Table('MaestroJobResults')]
 	else:
-		table = dynamodb.Table('MaestroPendingJobs')
+		tables = [dynamodb.Table('MaestroPendingJobs'), dynamodb.Table('MaestroExecutingJobs'), dynamodb.Table('MaestroJobResults')]
 
-	try:
-		lastEvaluatedKey = None
-		count = 0
-		while True:
-			if lastEvaluatedKey == None:
-				response = table.scan(
-					Select='COUNT'
-				)
-				logger.info(response)
-			else:
-				response = table.scan(
-					Select='COUNT',
-					ExclusiveStartKey=lastEvaluatedKey
-				)
-			count += response['Count']
-			if 'LastEvaluatedKey' in response:
-				lastEvaluatedKey = response['LastEvaluatedKey']
-			else:
-				break
+	total = 0
+	for tbl in tables:
+		try:
+			lastEvaluatedKey = None
+			count = 0
+			while True:
+				if lastEvaluatedKey == None:
+					response = tbl.scan(
+						Select='COUNT'
+					)
+					logger.info(response)
+				else:
+					response = tbl.scan(
+						Select='COUNT',
+						ExclusiveStartKey=lastEvaluatedKey
+					)
+				count += response['Count']
+				if 'LastEvaluatedKey' in response:
+					lastEvaluatedKey = response['LastEvaluatedKey']
+				else:
+					break
 
-	except ClientError as e:
-		logger.info(e)
-		raise Exception('500: Database error')
-	else:
-		return count
+		except ClientError as e:
+			logger.info(e)
+			raise Exception('500: Database error')
+		else:
+			total += count
+			result[tbl.table_name] = count
+	result['Total'] = total
+	return result
+
+'''
+This function moves a job from table A to table B.
+'''
+def move_job(event, context):
+	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+
+	# Set up the scan/delete filters/attributes
+	if event['from'] == 'pending':
+		fromTable = dynamodb.Table('MaestroPendingJobs')
+		kce=Key('JobID').eq(event['id'])
+		k={"JobID": event['id']}
+	elif event['from'] == 'executing':
+		fromTable = dynamodb.Table('MaestroExecutingJobs')
+		kce=Key('ExecutionID').eq(event['id'])
+		k={"ExecutionID": event['id']}
+	elif event['from'] == 'results':
+		fromTable = dynamodb.Table('MaestroJobResults')
+		kce=Key('JobID').eq(event['id'])
+		k={"JobID": event['id']}
+
+	# get the job form the source table source
+	response = fromTable.query(KeyConditionExpression=kce)
+
+	# pull out the actual job object from the response
+	if event['from'] == 'pending':
+		job = response['Items'][0]
+	elif event['from'] == 'executing':
+		job = response['Items'][0]
+	elif event['from'] == 'results':
+		job = response['Items'][0]['job']
+
+	# Remove ExecutionID and ExecutionRecordCreated from job
+	if 'ExecutionID' in job:
+		del job['ExecutionID']
+	if 'ExecutionRecordCreated' in job:
+		del job['ExecutionRecordCreated']
+
+	# Set up the "to" table and optionally add execution values
+	if event['to'] == 'pending':
+		toTable = dynamodb.Table('MaestroPendingJobs')
+	elif event['to'] == 'executing':
+		toTable = dynamodb.Table('MaestroExecutingJobs')
+		# Add ExecutionID and ExecutionRecordCreated with new values
+		executionID = uuid.uuid4()
+		logger.info(executionID)
+		job['ExecutionID'] = str(executionID)
+		now = datetime.datetime.now().strftime('%Y-%m-%d %I:%M:%S')
+		job['ExecutionRecordCreated'] = now
+
+	# put the job in the destination table
+	toTable.put_item(Item=job)
+
+	# remove the item form the "from" table
+	response = fromTable.delete_item(
+		Key=k
+	)
 
 '''
 Returns a list of results.
@@ -614,5 +678,4 @@ def get_job_results(event, context):
 		raise Exception('500: Database error')
 	else:
 		return results
-
 
