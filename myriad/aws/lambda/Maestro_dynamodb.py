@@ -71,6 +71,7 @@ def get_next_job(event, context):
 			logger.info("JobCategory set to " + jobCategory)
 
 	try:
+		lastEvaluatedKey = None
 		fe = None
 		if jobGroup != None and jobCategory != None:
 			fe = Attr('JobGroup').eq(jobGroup) & Attr('JobCategory').eq(jobCategory)
@@ -78,15 +79,37 @@ def get_next_job(event, context):
 			fe = Attr('JobGroup').eq(jobGroup)
 		elif jobGroup == None and jobCategory != None:
 			fe = Attr('JobCategory').eq(jobCategory)
-		if fe != None:
-			logger.info(str(fe))
-			response = pending.scan(
-				FilterExpression=fe
-			)
-		else:
-			response = pending.scan(
-				Limit=1
-			)
+		while True:
+			if lastEvaluatedKey == None:
+				if fe != None:
+					logger.info(str(fe))
+					response = pending.scan(
+						FilterExpression=fe
+					)
+				else:
+					response = pending.scan(
+						Limit=1
+					)
+				logger.info(response)
+			else:
+				if fe != None:
+					logger.info(str(fe))
+					response = pending.scan(
+						FilterExpression=fe,
+						ExclusiveStartKey=lastEvaluatedKey
+					)
+				else:
+					response = pending.scan(
+						Limit=1,
+						ExclusiveStartKey=lastEvaluatedKey
+					)
+			if 'LastEvaluatedKey' in response:
+				if len(response["Items"]) > 0:
+					break
+				else:
+					lastEvaluatedKey = response['LastEvaluatedKey']
+			else:
+				break
 
 	except ClientError as e:
 		logger.info(e)
@@ -224,6 +247,14 @@ def post_job_results(event, context):
 	if completed == '':
 		raise Exception('400: Missing completion date/time')
 
+	# Get the job started date/time
+	if 'Started' not in body:
+		started = "Unknown"
+	else:
+		started = body['Started']
+	if started == '':
+		started = "Unknown"
+
 	logger.info(body)
 	
 	job = body['job']
@@ -234,11 +265,14 @@ def post_job_results(event, context):
 			Key={
 				'JobID': jobID
 			},
-			UpdateExpression="set JobResults = :res, SourceIP = :ip, Completed = :comp, job = :job",
+			UpdateExpression="set JobResults = :res, SourceIP = :ip, Started = :start, Completed = :comp, JobGroup = :jg, JobCategory = :jc, job = :job",
 			ExpressionAttributeValues={
 				':res' : jobResults,
 				':ip': machineID,
 				':comp' : completed,
+				':start' : started,
+				':jg' : job['JobGroup'],
+				':jc' : job['JobCategory'],
 				':job' : job
 			},
 			ReturnValues="UPDATED_NEW"
@@ -545,3 +579,40 @@ def get_job_count(event, context):
 		raise Exception('500: Database error')
 	else:
 		return count
+
+'''
+Returns a list of results.
+'''
+def get_job_results(event, context):
+	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+
+	table = dynamodb.Table('MaestroJobResults')
+	results = []
+	fe = Attr('JobGroup').eq(event['jobGroup'])
+
+	try:
+		lastEvaluatedKey = None
+		while True:
+			if lastEvaluatedKey == None:
+				response = table.scan(
+					FilterExpression=fe
+				)
+				logger.info(response)
+			else:
+				response = table.scan(
+					FilterExpression=fe,
+					ExclusiveStartKey=lastEvaluatedKey
+				)
+			results.extend(response['Items'])
+			if 'LastEvaluatedKey' in response:
+				lastEvaluatedKey = response['LastEvaluatedKey']
+			else:
+				break
+
+	except ClientError as e:
+		logger.info(e)
+		raise Exception('500: Database error')
+	else:
+		return results
+
+
