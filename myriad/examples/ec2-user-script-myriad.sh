@@ -44,10 +44,12 @@ mkdir /mnt/scratch
 mount /dev/sdb /mnt/scratch &>> startup-myriad.log
 export PSI_SCRATCH=/mnt/scratch
 
-# comment this line if you do not want the instance to be self-terminating when the jobs run out
-#touch die.myriad
+# uncomment this line if you want the instance to be self-terminating when the jobs run out
+# but don't uncomment the pause.myriad line (below)
+touch die.myriad
+
+# uncomment this line if you want the instance to pause Myriad when the jobs run out
 #touch pause.myriad
-#touch shutdown.myriad
 
 # sleep for 1-60 seconds, so a group of VMs don't all grab the same first job
 sleep $(shuf -i 1-60 -n 1)
@@ -56,9 +58,9 @@ sleep $(shuf -i 1-60 -n 1)
 while [ true ]; do
         touch mm.out
         #python34 bootstrap-myriad.py >> mm.out 2>&1
-        #python34 bootstrap-myriad.py --group NH2CH2 >> mm.out 2>&1
+        python34 bootstrap-myriad.py --group CH2NH2 >> mm.out 2>&1
         #python34 bootstrap-myriad.py --subGroup QZ >> mm.out 2>&1
-        python34 bootstrap-myriad.py --group CH2NH2 --subGroup TZ >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --group CH2NH2 --subGroup TZ >> mm.out 2>&1
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?"
         
