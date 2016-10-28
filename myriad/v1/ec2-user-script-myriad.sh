@@ -25,11 +25,8 @@ python34 -m pip install --upgrade pip &>> startup-myriad.log
 python34 -m pip install requests --upgrade &>> startup-myriad.log
 python34 -m pip install psutil --upgrade &>> startup-myriad.log
 
-# Download Myriad and its supporting files
-curl -o libmyriad.py $MYRIAD_GITHUB/libmyriad.py &>> startup-myriad.log
-curl -o myriad.py $MYRIAD_GITHUB/myriad.py &>> startup-myriad.log
+# Download Myriad
 curl -o bootstrap-myriad.py $MYRIAD_GITHUB/bootstrap-myriad.py &>> startup-myriad.log
-curl -o parseconfig.py $MYRIAD_GITHUB/parseconfig.py &>> startup-myriad.log
 
 # This molecule requires an MTS file in the BASIS folder
 curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
