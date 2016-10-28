@@ -230,7 +230,7 @@ class Myriad:
 		logging.info("Energy = " + str(energy))
 		if energy == None:
 			logging.warn("No energy found")
-			return ResultCode.noaction
+			return ResultCode.failure
 
 		logging.info("Posting results to the web service at " + str(self.maestroAPIGateway))
 		n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -54,10 +54,10 @@ sleep $(shuf -i 1-60 -n 1)
 # Begin running jobs
 while [ true ]; do
         touch mm.out
-        #python34 bootstrap-myriad.py >> mm.out 2>&1
-        python34 bootstrap-myriad.py --group CH2NH2 >> mm.out 2>&1
-        #python34 bootstrap-myriad.py --subGroup QZ >> mm.out 2>&1
-        #python34 bootstrap-myriad.py --group CH2NH2 --subGroup TZ >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --group CH2NH2 --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --subGroup QZ --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
+        python34 bootstrap-myriad.py --group CH2NH2 --subGroup TZ --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?"
         

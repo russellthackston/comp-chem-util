@@ -15,7 +15,7 @@ class Bootstrap:
 
 	def __init__(self):
 		self.server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
-		self.version = 'v1'
+		self.version = 'stable'
 
 	def downloadMyriad(self):
 		self.downloadMyriadFile('libmyriad.py')
@@ -24,15 +24,23 @@ class Bootstrap:
 		importlib.reload(myriad)
 
 	def downloadMyriadFile(self, filename):
-		r = requests.get(self.server + filename)
+		r = requests.get(self.server + self.version + "/" + filename)
 		f = open(filename, 'w')
 		f.write(r.text)
 		f.flush()
 		f.close()
 
-	def run(self, jobGroup=None, jobCategory=None):
+	def run(self, jobGroup=None, jobCategory=None, server='https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/', version='stable'):
 		logging.info("Job group = " + str(jobGroup))
 		logging.info("Job category = " + str(jobCategory))
+		logging.info("Server = " + str(server))
+		logging.info("Version = " + str(version))
+
+		# Download a (potentially) updated copy of Myriad
+		self.version = version
+		self.downloadMyriad()
+
+		# Go into a loop of running jobs
 		result = libmyriad.ResultCode.success
 		while(True):
 
@@ -40,26 +48,16 @@ class Bootstrap:
 			m = myriad.Myriad()
 			result = m.runOnce(jobGroup, jobCategory)
 
-			if result == libmyriad.ResultCode.shutdown:
+			if result == libmyriad.ResultCode.shutdown or os.path.isfile('die.myriad') or os.path.isfile('shutdown.myriad'):
 				logging.info('Shutting down myriad...')
-			elif result == libmyriad.ResultCode.success:
-				# If success, upload job folder(s) to S3 and delete from local drive
-				logging.info('Job completed successfully.')
+				return
 			elif result == libmyriad.ResultCode.failure:
-				logging.info('Job failed. Retrying in 10 seconds...')
+				logging.info('Job failed. Attempting another job in 10 seconds...')
 				time.sleep(10)
 			elif result == libmyriad.ResultCode.noaction:
-				# this file should be created by the start-up script or manually by the user
-				# Or it may be created by Myriad if it detects a Spot Instance being terminated
-				if os.path.isfile('shutdown.myriad'):
-					logging.info('Shutdown requested...')
-					command = "/sbin/shutdown -h +1"
-					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 				logging.info('No jobs found. Retrying in 60 seconds...')
 				time.sleep(60)
 
-			if os.path.isfile('die.myriad') or os.path.isfile('shutdown.myriad'):
-				return
 			while os.path.isfile('pause.myriad'):
 				time.sleep(5)
 
@@ -69,6 +67,8 @@ class Bootstrap:
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--group', dest='group', action='store', type=str, help='Optional group for filtering the requested job')
 parser.add_argument('--subGroup', dest='subGroup', action='store', type=str, help='Optional sub group for filtering the requested job')
+parser.add_argument('--server', dest='server', action='store', type=str, help='Optional server address for updating Myriad')
+parser.add_argument('--version', dest='version', action='store', type=str, help='Optional version number of Myriad to update to or "stable"')
 args = parser.parse_args()
 
 logging.basicConfig(filename='myriad.log',level=logging.INFO)
