@@ -42,8 +42,8 @@ class Bootstrap:
 
 			if result == libmyriad.ResultCode.shutdown:
 				logging.info('Shutting down myriad...')
-			elif result == libmyriad.ResultCode.success or result == libmyriad.ResultCode.failure:
-				# If success, upload job folder(s) to S3 and delete for local drive
+			elif result == libmyriad.ResultCode.success:
+				# If success, upload job folder(s) to S3 and delete from local drive
 				logging.info('Job completed. Zipping output files')
 				zips = glob.glob("*.zip")
 				for zip in zips:
