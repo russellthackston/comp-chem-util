@@ -4,8 +4,9 @@
 cd /home/ec2-user
 export PATH=/home/ec2-user/intder:/home/ec2-user/miniconda/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/opt/aws/bin:/home/ec2-user/.local/bin:/home/ec2-user/bin
 
-# Store off this machine's IP address for later reference
+# Store off this machine's IP address and instance-id for later reference
 curl http://169.254.169.254/latest/meta-data/public-ipv4 > ip.txt
+curl http://169.254.169.254/latest/meta-data/ami-id > ami-id.txt
 
 # Endpoint for the Myriad project on GitHub and for my job files on S3
 export MYRIAD_GITHUB=https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad
@@ -28,14 +29,11 @@ python34 -m pip install psutil --upgrade &>> startup-myriad.log
 curl -o libmyriad.py $MYRIAD_GITHUB/libmyriad.py &>> startup-myriad.log
 curl -o myriad.py $MYRIAD_GITHUB/myriad.py &>> startup-myriad.log
 curl -o bootstrap-myriad.py $MYRIAD_GITHUB/bootstrap-myriad.py &>> startup-myriad.log
+curl -o parseconfig.py $MYRIAD_GITHUB/parseconfig.py &>> startup-myriad.log
 
 # This molecule requires an MTS file in the BASIS folder
 curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
 mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> startup-myriad.log
-
-# Download the credentials for the AWS CLI
-mkdir .aws &>> startup-myriad.log
-curl http://169.254.169.254/latest/meta-data/iam/security-credentials/S3FullAccess > ~/.aws/config &>> startup-myriad.log
 
 # Setup the scratch space for psi4
 mkfs -t ext3 /dev/sdb &>> startup-myriad.log
@@ -45,7 +43,7 @@ export PSI_SCRATCH=/mnt/scratch
 
 # uncomment this line if you want the instance to be self-terminating when the jobs run out
 # but don't uncomment the pause.myriad line (below)
-touch die.myriad
+#touch die.myriad
 
 # uncomment this line if you want the instance to pause Myriad when the jobs run out
 #touch pause.myriad
