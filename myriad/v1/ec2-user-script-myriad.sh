@@ -4,15 +4,21 @@
 cd /home/ec2-user
 export PATH=/home/ec2-user/intder:/home/ec2-user/miniconda/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/opt/aws/bin:/home/ec2-user/.local/bin:/home/ec2-user/bin
 
-# Store off this machine's IP address and instance-id for later reference
-curl http://169.254.169.254/latest/meta-data/public-ipv4 > ip.txt
-curl http://169.254.169.254/latest/meta-data/ami-id > ami-id.txt
-
 # Endpoint for the Myriad project on GitHub and for my job files on S3
-export MYRIAD_GITHUB=https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad
+export MYRIAD_GITHUB=https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/
 export MYRIAD_VERSION=v1
 export MYRIAD_AWS=http://psi4share.s3-website-us-east-1.amazonaws.com
 export MOLECULE=CH2NH2
+export SUBGROUP=TZ
+
+# Go ahead and create the output files for easy use of the tail command
+touch startup-myriad.log
+touch mm.out
+touch myriad.log
+
+# Store off this machine's IP address and instance-id for later reference
+curl http://169.254.169.254/latest/meta-data/public-ipv4 > ip.txt
+curl http://169.254.169.254/latest/meta-data/ami-id > ami-id.txt
 
 # Download Myriad config file(s)
 echo Downloading config.txt... &>> startup-myriad.log
@@ -28,6 +34,8 @@ python34 -m pip install psutil --upgrade &>> startup-myriad.log
 
 # Download Myriad
 curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> startup-myriad.log
+curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/libmyriad.py &>> startup-myriad.log
+curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> startup-myriad.log
 
 # This molecule requires an MTS file in the BASIS folder
 curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
@@ -51,11 +59,10 @@ sleep $(shuf -i 1-60 -n 1)
 
 # Begin running jobs
 while [ true ]; do
-        touch mm.out
-        #python34 bootstrap-myriad.py --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
-        #python34 bootstrap-myriad.py --group CH2NH2 --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
-        #python34 bootstrap-myriad.py --subGroup QZ --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
-        python34 bootstrap-myriad.py --group CH2NH2 --subGroup TZ --server https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/ --version v1 >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
+        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?"
         
