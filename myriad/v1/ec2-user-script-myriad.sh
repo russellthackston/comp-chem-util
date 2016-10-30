@@ -35,7 +35,7 @@ python34 -m pip install psutil --upgrade &>> startup-myriad.log
 # Download Myriad
 curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> startup-myriad.log
 curl -o libmyriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/libmyriad.py &>> startup-myriad.log
-curl -o startup-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> startup-myriad.log
+curl -o myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> startup-myriad.log
 
 # This molecule requires an MTS file in the BASIS folder
 curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
@@ -60,9 +60,9 @@ sleep $(shuf -i 1-60 -n 1)
 # Begin running jobs
 while [ true ]; do
         #python34 bootstrap-myriad.py --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
-        #python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
+        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
         #python34 bootstrap-myriad.py --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
-        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
+        #python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?"
         
