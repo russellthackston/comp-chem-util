@@ -14,7 +14,7 @@ import time
 class Bootstrap:
 
 	def __init__(self):
-		self.server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad/'
+		self.server = 'https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad'
 		self.version = 'stable'
 
 	def downloadMyriad(self):
@@ -24,7 +24,7 @@ class Bootstrap:
 		importlib.reload(myriad)
 
 	def downloadMyriadFile(self, filename):
-		r = requests.get(self.server + self.version + "/" + filename)
+		r = requests.get(self.server + "/" + self.version + "/" + filename)
 		f = open(filename, 'w')
 		f.write(r.text)
 		f.flush()
