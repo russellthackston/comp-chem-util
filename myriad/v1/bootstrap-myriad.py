@@ -1,9 +1,9 @@
 import argparse
 import glob
 import importlib
-import libmyriad
+#import libmyriad
 import logging
-import myriad
+#import myriad
 import os
 import requests
 import shutil
@@ -37,6 +37,7 @@ class Bootstrap:
 		logging.info("Version = " + str(version))
 
 		# Download a (potentially) updated copy of Myriad
+		self.server = server
 		self.version = version
 		self.downloadMyriad()
 
@@ -71,9 +72,8 @@ parser.add_argument('--server', dest='server', action='store', type=str, help='O
 parser.add_argument('--version', dest='version', action='store', type=str, help='Optional version number of Myriad to update to or "stable"')
 args = parser.parse_args()
 
-logging.basicConfig(filename='myriad.log',level=logging.INFO)
-logging.basicConfig(format='%(asctime)s %(message)s')
+logging.basicConfig(filename='myriad.log',level=logging.INFO,format='%(asctime)s %(message)s')
 logging.info("Bootstrapping Myriad...")
 
 b = Bootstrap()
-b.run(args.group, args.subGroup)
+b.run(jobGroup=args.group, jobCategory=args.subGroup, server=args.server, version=args.version)

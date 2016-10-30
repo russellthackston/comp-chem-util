@@ -10,6 +10,7 @@ curl http://169.254.169.254/latest/meta-data/ami-id > ami-id.txt
 
 # Endpoint for the Myriad project on GitHub and for my job files on S3
 export MYRIAD_GITHUB=https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad
+export MYRIAD_VERSION=v1
 export MYRIAD_AWS=http://psi4share.s3-website-us-east-1.amazonaws.com
 export MOLECULE=CH2NH2
 
@@ -26,7 +27,7 @@ python34 -m pip install requests --upgrade &>> startup-myriad.log
 python34 -m pip install psutil --upgrade &>> startup-myriad.log
 
 # Download Myriad
-curl -o bootstrap-myriad.py $MYRIAD_GITHUB/bootstrap-myriad.py &>> startup-myriad.log
+curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> startup-myriad.log
 
 # This molecule requires an MTS file in the BASIS folder
 curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
