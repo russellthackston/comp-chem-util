@@ -36,6 +36,13 @@ class Myriad:
 		self.ami = None
 		self.region = None
 
+	def getAmi(self):
+		# Load the configuration values from file
+		f = open('config.txt')
+		lines = f.readlines()
+		f.close()
+		self.ami = lines[0].strip()
+
 	def getRegion(self):
 		# lazy load region value
 		if self.region == None:
