@@ -1,9 +1,9 @@
 import argparse
 import glob
 import importlib
-#import libmyriad
+import libmyriad
 import logging
-#import myriad
+import myriad
 import os
 import requests
 import shutil
