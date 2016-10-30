@@ -34,14 +34,17 @@ class Myriad:
 		self.jobStarted = None
 		self.jobName = None
 		self.ami = None
+		self.region = None
 
-	def getAmi(self):
-		# Load the configuration values from file
-		f = open('config.txt')
-		lines = f.readlines()
-		f.close()
-		self.ami = lines[0].strip()
-	
+	def getRegion(self):
+		# lazy load region value
+		if self.region == None:
+			r = requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone')
+			if r.status_code == 200:
+				self.region = r.text.strip()
+			self.region = 'us-east-1'
+		return self.region
+
 	def loadEndpoints(self):
 		# Load the configuration values from file
 		f = open('config.txt')
@@ -362,10 +365,10 @@ class Myriad:
 			
 
 	def doModifyTag(self, action, key, value):
-		# aws ec2 delete-tags --resources ami-78a54011 --tags Key=Stack
-		# aws ec2 create-tags --resources ami-78a54011 --tags 'Key="[Group]",Value="test"'
+		# aws ec2 delete-tags --resources ami-78a54011 --tags Key=Stack --region us-east-1
+		# aws ec2 create-tags --resources ami-78a54011 --tags Key=Stack,Value=foo --region us-east-1
 		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
-		command = "aws ec2 "+action+" --resources " + str(self.ami) + " --tags Key="+str(key)
+		command = "aws ec2 " + action + " --resources " + str(self.ami) + " --tags Key="+str(key) + " --region " + str(self.getRegion())
 		if value != None:
 			command += ",Value="+str(value)
 		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
