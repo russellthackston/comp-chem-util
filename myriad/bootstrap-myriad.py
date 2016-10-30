@@ -44,13 +44,7 @@ class Bootstrap:
 				logging.info('Shutting down myriad...')
 			elif result == libmyriad.ResultCode.success:
 				# If success, upload job folder(s) to S3 and delete from local drive
-				logging.info('Job completed. Zipping output files')
-				zips = glob.glob("*.zip")
-				for zip in zips:
-					command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
-					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-					command = "rm " + str(zip)
-					process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+				logging.info('Job completed successfully.')
 			elif result == libmyriad.ResultCode.failure:
 				logging.info('Job failed. Retrying in 10 seconds...')
 				time.sleep(10)

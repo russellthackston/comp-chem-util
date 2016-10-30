@@ -32,7 +32,16 @@ class Myriad:
 		self.jobConfig = None
 		self.parsedJob = None
 		self.jobStarted = None
+		self.jobName = None
+		self.ami = None
 
+	def getAmi(self):
+		# Load the configuration values from file
+		f = open('config.txt')
+		lines = f.readlines()
+		f.close()
+		self.ami = lines[0].strip()
+	
 	def loadEndpoints(self):
 		# Load the configuration values from file
 		f = open('config.txt')
@@ -100,6 +109,7 @@ class Myriad:
 		self.executionID = self.parsedJob['ExecutionID']
 		self.jobGroup = self.parsedJob['JobGroup']
 		self.jobCategory = self.parsedJob['JobCategory']
+		self.jobName = self.parsedJob['JobName']
 		self.displacements = self.parsedJob['JobDefinition']['Displacements']
 		return ResultCode.success
 
@@ -351,6 +361,47 @@ class Myriad:
 			logging.warn("Error compressing job folder: " + str(e))
 			
 
+	def doModifyTag(self, action, key, value):
+		# aws ec2 delete-tags --resources ami-78a54011 --tags Key=Stack
+		# aws ec2 create-tags --resources ami-78a54011 --tags 'Key="[Group]",Value="test"'
+		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
+		command = "aws ec2 "+action+" --resources " + str(self.ami) + " --tags Key="+str(key)
+		if value != None:
+			command += ",Value="+str(value)
+		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+
+	def tagInstance(self):
+		self.doModifyTag("create-tags", "Name", self.jobName)
+		self.doModifyTag("create-tags", "ExecutionID", self.executionID)
+		self.doModifyTag("create-tags", "JobID", self.jobID)
+	
+	def untagInstance(self):
+		self.doModifyTag("delete-tags", "Name", None)
+		self.doModifyTag("delete-tags", "ExecutionID", None)
+		self.doModifyTag("delete-tags", "JobID", None)
+	
+	def downloadCredentials(self):
+		logging.info("Retrieving credentials...")
+		r = requests.get("http://169.254.169.254/latest/meta-data/iam/security-credentials/S3FullAccess")
+		if r.status_code == 200:
+			json = json.loads(r.text)
+			os.environ["AWS_ACCESS_KEY_ID"] = str(json['AccessKeyId'])
+			os.environ["AWS_SECRET_ACCESS_KEY"] = str(json['SecretAccessKey'])
+			os.environ["AWS_SECURITY_TOKEN"] = str(json['Token'])
+			logging.info("Credentials exported to environment variables")
+		else:
+			logging.warn("Failed to retrieve credentials")
+
+	def uploadOutputFiles(self):
+		self.downloadCredentials()
+		logging.info('Uploading output files...')
+		zips = glob.glob("*.zip")
+		for zip in zips:
+			command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
+			process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+			command = "rm " + str(zip)
+			process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+
 	# Main
 	def runOnce(self, jobGroup=None, jobCategory=None, error=None):
 		logging.info("Myriad.runOnce invoked...")
@@ -370,8 +421,9 @@ class Myriad:
 		if error != None:
 			self.errors.append(error)
 
-		# load the endpoints for web service calls
+		# load the endpoints for web service calls and get ami-id for this machine
 		self.loadEndpoints()
+		self.ami = self.getAmi()
 
 		# if no error, get a new job.
 		# if there is an error code, we're going to re-run the job we have
@@ -389,6 +441,7 @@ class Myriad:
 				self.clearScratch()
 				self.makeJobFolder()
 				self.makeInputDat()
+				self.tagInstance()
 				result = self.runPsi4()
 				if result == ResultCode.success:
 					logging.info("runPsi4() returned success code")
@@ -406,6 +459,7 @@ class Myriad:
 				self.closeJobFolder()
 				if result != ResultCode.shutdown:
 					self.zipJobFolder()
+					self.uploadOutputFiles()
 					self.clearScratch()
 
 				# if we encounter a known error, try the job again and compensate
