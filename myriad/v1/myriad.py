@@ -388,7 +388,7 @@ class Myriad:
 			command += ",Value="+str(value)
 		logging.info("Invoking " + str(command))
 		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		out, err = sp.communicate()
+		out, err = process.communicate()
 		if out:
 			logging.info("doModifyTag() subprocess.Popen stdout...")
 			logging.info(out)
@@ -396,7 +396,7 @@ class Myriad:
 			logging.warn("doModifyTag() subprocess.Popen stderr...")
 			logging.warn(err)
 		logging.info("doModifyTag() subprocess.Popen returncode...")
-		logging.info(sp.returncode)
+		logging.info(process.returncode)
 
 	def tagInstance(self):
 		self.downloadCredentials()
