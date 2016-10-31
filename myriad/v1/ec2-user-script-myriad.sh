@@ -19,13 +19,14 @@ touch myriad.log
 # Store off this machine's IP address and instance-id for later reference
 curl http://169.254.169.254/latest/meta-data/public-ipv4 > ip.txt
 curl http://169.254.169.254/latest/meta-data/ami-id > ami-id.txt
+curl http://instance-data/latest/meta-data/instance-id > instance-id.txt
 
 # Download Myriad config file(s)
-echo Downloading config.txt... &>> startup-myriad.log
+echo "Downloading config.txt..." &>> startup-myriad.log
 curl -o config.txt $MYRIAD_AWS/$MOLECULE/config.txt &>> startup-myriad.log
 
 # Update all software and packages
-echo Updating software &>> startup-myriad.log
+echo "Updating software" &>> startup-myriad.log
 yum update -y &>> startup-myriad.log
 conda update --yes --all &>> startup-myriad.log
 python34 -m pip install --upgrade pip &>> startup-myriad.log
