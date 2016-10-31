@@ -390,11 +390,13 @@ class Myriad:
 		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 
 	def tagInstance(self):
+		self.downloadCredentials()
 		self.doModifyTag("create-tags", "Name", self.jobName)
 		self.doModifyTag("create-tags", "ExecutionID", self.executionID)
 		self.doModifyTag("create-tags", "JobID", self.jobID)
 	
 	def untagInstance(self):
+		self.downloadCredentials()
 		self.doModifyTag("delete-tags", "Name", None)
 		self.doModifyTag("delete-tags", "ExecutionID", None)
 		self.doModifyTag("delete-tags", "JobID", None)
