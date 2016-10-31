@@ -386,6 +386,7 @@ class Myriad:
 		command = "aws ec2 " + action + " --resources " + str(self.instanceID) + " --tags Key="+str(key) + " --region " + str(self.getRegion())
 		if value != None:
 			command += ",Value="+str(value)
+		logging.info("Invoking " + str(command))
 		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 
 	def tagInstance(self):
