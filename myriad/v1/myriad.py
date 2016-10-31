@@ -57,7 +57,6 @@ class Myriad:
 			r = requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone')
 			if r.status_code == 200:
 				self.region = r.text.strip()
-			self.region = 'us-east-1'
 		return self.region
 
 	def loadEndpoints(self):
