@@ -405,10 +405,10 @@ class Myriad:
 		logging.info("Retrieving credentials...")
 		r = requests.get("http://169.254.169.254/latest/meta-data/iam/security-credentials/S3FullAccess")
 		if r.status_code == 200:
-			json = json.loads(r.text)
-			os.environ["AWS_ACCESS_KEY_ID"] = str(json['AccessKeyId'])
-			os.environ["AWS_SECRET_ACCESS_KEY"] = str(json['SecretAccessKey'])
-			os.environ["AWS_SECURITY_TOKEN"] = str(json['Token'])
+			j = json.loads(r.text)
+			os.environ["AWS_ACCESS_KEY_ID"] = str(j['AccessKeyId'])
+			os.environ["AWS_SECRET_ACCESS_KEY"] = str(j['SecretAccessKey'])
+			os.environ["AWS_SECURITY_TOKEN"] = str(j['Token'])
 			logging.info("Credentials exported to environment variables")
 		else:
 			logging.warn("Failed to retrieve credentials")
