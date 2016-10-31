@@ -54,9 +54,10 @@ class Myriad:
 	def getRegion(self):
 		# lazy load region value
 		if self.region == None:
-			r = requests.get('http://169.254.169.254/latest/meta-data/placement/availability-zone')
+			r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
 			if r.status_code == 200:
-				self.region = r.text.strip()
+				j = json.loads(r.text)
+				self.region = str(j['region'])
 		return self.region
 
 	def loadEndpoints(self):
@@ -386,7 +387,16 @@ class Myriad:
 		if value != None:
 			command += ",Value="+str(value)
 		logging.info("Invoking " + str(command))
-		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		out, err = sp.communicate()
+		if out:
+			logging.info("doModifyTag() subprocess.Popen stdout...")
+			logging.info(out)
+		if err:
+			logging.warn("doModifyTag() subprocess.Popen stderr...")
+			logging.warn(err)
+		logging.info("doModifyTag() subprocess.Popen returncode...")
+		logging.info(sp.returncode)
 
 	def tagInstance(self):
 		self.downloadCredentials()
