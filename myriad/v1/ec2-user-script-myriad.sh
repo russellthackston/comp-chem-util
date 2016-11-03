@@ -56,16 +56,16 @@ export PSI_SCRATCH=/mnt/scratch
 #touch pause.myriad
 
 # sleep for 1-60 seconds, so a group of VMs don't all grab the same first job
-sleep $(shuf -i 1-60 -n 1)
+sleep $(shuf -i 1-300 -n 1)
 
 # Begin running jobs
 while [ true ]; do
         #python34 bootstrap-myriad.py --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
-        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
+        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> myriad.log 2>&1
         #python34 bootstrap-myriad.py --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
         #python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.out 2>&1
         # when Myriad exits it will go into a loop and wait
-        echo "Myriad exit code is $?"
+        echo "Myriad exit code is $?" >> myriad.log 2>&1
         
         while [ -f pause.myriad ]; do
                 # delete the pause.myriad file to restart Myriad

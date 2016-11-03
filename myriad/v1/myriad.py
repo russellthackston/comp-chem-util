@@ -403,12 +403,14 @@ class Myriad:
 		self.doModifyTag("create-tags", "Name", self.jobName)
 		self.doModifyTag("create-tags", "ExecutionID", self.executionID)
 		self.doModifyTag("create-tags", "JobID", self.jobID)
+		self.doModifyTag("create-tags", "StartTime", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 	
 	def untagInstance(self):
 		self.downloadCredentials()
 		self.doModifyTag("delete-tags", "Name", None)
 		self.doModifyTag("delete-tags", "ExecutionID", None)
 		self.doModifyTag("delete-tags", "JobID", None)
+		self.doModifyTag("delete-tags", "StartTime", None)
 	
 	def downloadCredentials(self):
 		logging.info("Retrieving credentials...")
