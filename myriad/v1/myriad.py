@@ -382,7 +382,7 @@ class Myriad:
 		# aws ec2 delete-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack
 		# aws ec2 create-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack,Value=foo
 		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
-		command = "aws ec2 " + action + " --resources " + str(self.instanceID) + " --region " + str(self.getRegion()) + " --tags Key="+str(key)
+		command = "aws ec2 " + action + " --resources " + str(self.instanceID) + " --region " + str(self.getRegion()) + " --tags 'Key="+str(key)+"'"
 		if value != None:
 			command += ",Value="+str(value)
 		logging.info("Invoking " + str(command))
@@ -403,6 +403,8 @@ class Myriad:
 		self.doModifyTag("create-tags", "ExecutionID", self.executionID)
 		self.doModifyTag("create-tags", "JobID", self.jobID)
 		self.doModifyTag("create-tags", "StartTime", '"' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '"')
+		self.doModifyTag("create-tags", "Displacements", '"' + self.displacements + '"')
+		#self.displacements
 	
 	def untagInstance(self):
 		self.downloadCredentials()
@@ -410,6 +412,7 @@ class Myriad:
 		self.doModifyTag("delete-tags", "ExecutionID", None)
 		self.doModifyTag("delete-tags", "JobID", None)
 		self.doModifyTag("delete-tags", "StartTime", None)
+		self.doModifyTag("delete-tags", "Displacements", None)
 	
 	def downloadCredentials(self):
 		logging.info("Retrieving credentials...")
