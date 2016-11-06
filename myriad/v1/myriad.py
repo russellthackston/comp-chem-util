@@ -25,7 +25,6 @@ class Myriad:
 		self.executionID = None
 		self.jobGroup = None
 		self.jobCategory = None
-		self.jobCategory = None
 		self.jobFolder = None
 		self.errors = []
 		self.ip = None
@@ -284,7 +283,7 @@ class Myriad:
 		logging.info("Finished clearing the scratch folder.")
 
 	def makeJobFolder(self):
-		self.jobFolder = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"+str(self.jobID))
+		self.jobFolder = self.jobName + "_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"+str(self.jobID))
 		os.mkdir(self.jobFolder)
 		os.chdir(self.jobFolder)
 
