@@ -35,6 +35,22 @@ curl -o parseconfig.py $MYRIAD_GITHUB/parseconfig.py &>> startup-myriad.log
 curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> startup-myriad.log
 mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> startup-myriad.log
 
+# Uncomment one of the two sections below, depending on the instance types you select
+# 
+
+# MULTIPLE-INSTANCE-STORES, such as /dev/sdb, /dev/sdc, etc.
+# This scriplet handles up to 25 drives [b-z]
+umount /dev/xvdb &>> startup-myriad.log
+pvcreate /dev/xvd[b-z] --verbose --yes
+vgcreate -s 16M vg /dev/xvd[b-z] --verbose
+LVSIZE=$(vgs vg --units k | rev | cut -d " " -f1 | rev | xargs)
+LVCOUNT=$(pvdisplay | grep /dev/sd | wc -l)
+lvcreate -L $LVSIZE -n lvg -i$LVCOUNT vg
+mkfs.ext3 /dev/vg/lvg
+mkdir /mnt/scratch
+mount /dev/vg/lvg /mnt/scratch &>> startup-myriad.log
+
+# SINGLE-INSTANCE-STORE, such as /dev/sdb only
 # Setup the scratch space for psi4
 mkfs -t ext3 /dev/sdb &>> startup-myriad.log
 mkdir /mnt/scratch
