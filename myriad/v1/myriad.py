@@ -35,6 +35,7 @@ class Myriad:
 		self.ami = None
 		self.instanceID = None
 		self.region = None
+		self.cmdBacklog = []
 
 	def getInstanceID(self):
 		# Load the configuration values from file
@@ -356,6 +357,11 @@ class Myriad:
 		except:
 			logging.warn("Error posting status. Ignoring.")
 
+		# If there's a failed tagging command in the queue, pop it and run it
+		if len(self.cmdBacklog) > 0:
+			command = self.cmdBacklog.pop()
+			self.runCommand(command)
+
 	def zipJobFolder(self):
 		# Get IP address
 		f = open('ip.txt')
@@ -386,6 +392,9 @@ class Myriad:
 		if value != None:
 			command += ',Value="' + str(value) + '"'
 		command += "'"
+		self.runCommand(command)
+	
+	def runCommand(self, command):
 		logging.info("Invoking " + str(command))
 		process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		out, err = process.communicate()
@@ -397,6 +406,10 @@ class Myriad:
 			logging.warn(err)
 		logging.info("doModifyTag() subprocess.Popen returncode...")
 		logging.info(process.returncode)
+
+		# If we get back a RequestLimitExceeded error make a note to try again later...
+		if process.returncode == 255 and "RequestLimitExceeded" in str(err):
+			self.cmdBacklog.append(command)
 
 	def tagInstance(self):
 		self.downloadCredentials()
