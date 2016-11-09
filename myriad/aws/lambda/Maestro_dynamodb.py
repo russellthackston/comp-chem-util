@@ -6,6 +6,7 @@ import datetime
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 import uuid
+from random import randint
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -61,6 +62,7 @@ def get_next_job(event, context):
 	executing = dynamodb.Table('MaestroExecutingJobs')
 	jobGroup = None
 	jobCategory = None
+	seg = randint(0,999)
 	if 'jobGroup' in event:
 		if event['jobGroup'] != "":
 			jobGroup = event['jobGroup']
@@ -88,11 +90,15 @@ def get_next_job(event, context):
 				if fe != None:
 					logger.info(str(fe))
 					response = pending.scan(
-						FilterExpression=fe
+						FilterExpression=fe,
+						Segment=seg,
+						TotalSegments=1000
 					)
 				else:
 					response = pending.scan(
-						Limit=1
+						Limit=1,
+						Segment=seg,
+						TotalSegments=1000
 					)
 				logger.info(response)
 			else:
@@ -100,12 +106,16 @@ def get_next_job(event, context):
 					logger.info(str(fe))
 					response = pending.scan(
 						FilterExpression=fe,
-						ExclusiveStartKey=lastEvaluatedKey
+						ExclusiveStartKey=lastEvaluatedKey,
+						Segment=seg,
+						TotalSegments=1000
 					)
 				else:
 					response = pending.scan(
 						Limit=1,
-						ExclusiveStartKey=lastEvaluatedKey
+						ExclusiveStartKey=lastEvaluatedKey,
+						Segment=seg,
+						TotalSegments=1000
 					)
 			if 'LastEvaluatedKey' in response:
 				if len(response["Items"]) > 0:
@@ -609,6 +619,31 @@ def get_job_count(event, context):
 			result[tbl.table_name] = count
 	result['Total'] = total
 	return result
+
+'''
+This function moves all executing jobs back to the pending jobs table.
+'''
+def executing_to_pending(event, context):
+	if 'limit' in event:
+		limit = event['limit']
+	else:
+		limit = 100
+	fe = Attr('JobGroup').eq(event['jobGroup'])
+	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+	tblExecuting = dynamodb.Table('MaestroExecutingJobs')
+	response = tblExecuting.scan(FilterExpression=fe)
+	count = 0
+	for item in response['Items']:
+		e = {
+			'from' : 'executing',
+			'to' : 'pending',
+			'id' : item['ExecutionID']
+		}
+		move_job(event=e, context=None)
+		count = count + 1
+		if count >= limit:
+			break
+	return count
 
 '''
 This function moves a job from table A to table B.
