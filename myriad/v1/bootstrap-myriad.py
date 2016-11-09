@@ -49,7 +49,7 @@ class Bootstrap:
 			m = myriad.Myriad()
 			result = m.runOnce(jobGroup, jobCategory)
 
-			if result == libmyriad.ResultCode.shutdown or os.path.isfile('die.myriad') or os.path.isfile('shutdown.myriad'):
+			if result == libmyriad.ResultCode.shutdown or os.path.isfile('shutdown.myriad'):
 				logging.info('Shutting down myriad...')
 				return
 			elif result == libmyriad.ResultCode.failure:
