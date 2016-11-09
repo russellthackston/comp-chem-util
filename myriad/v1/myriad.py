@@ -387,7 +387,7 @@ class Myriad:
 			command += ',Value="' + str(value) + '"'
 		command += "'"
 		logging.info("Invoking " + str(command))
-		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		out, err = process.communicate()
 		if out:
 			logging.info("doModifyTag() subprocess.Popen stdout...")
