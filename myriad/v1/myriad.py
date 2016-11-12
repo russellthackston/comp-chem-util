@@ -422,7 +422,7 @@ class Myriad:
 	
 	def untagInstance(self):
 		self.downloadCredentials()
-		self.doModifyTag("delete-tags", "Name", None)
+		self.doModifyTag("create-tags", "Name", "Waiting")
 		self.doModifyTag("delete-tags", "ExecutionID", None)
 		self.doModifyTag("delete-tags", "JobID", None)
 		self.doModifyTag("delete-tags", "StartTime", None)
