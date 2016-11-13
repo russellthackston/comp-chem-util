@@ -1,4 +1,53 @@
 #!/bin/bash
+
+# Download Myriad
+downloadMyriad () {
+	curl -o libmyriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/libmyriad.py &>> logs/startup-myriad.log
+	curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> logs/startup-myriad.log
+	curl -o myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> logs/startup-myriad.log
+}
+
+checkForPause () {
+	export EC2_PAUSE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=PAUSE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+        if [ "$EC2_PAUSE" != "null" ]; then
+		aws ec2 create-tags --tags Key=Name,Value=Paused --resource $EC2_INSTANCE_ID --region $EC2_REGION
+	fi
+        while [ "$EC2_PAUSE" != "null" ]; do
+        	echo "Myriad is paused. Remove the PAUSE tag from the instance to restart" >> myriad.log 2>&1
+                sleep 60
+		export EC2_PAUSE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=PAUSE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+        done
+}
+
+checkForDie () {
+	export EC2_DIE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=DIE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+        # If the die.myriad file exists, shutdown the instance
+        if [ "$EC2_DIE" != "null" ]; then
+        	shutdown -h 0
+                exit 0
+        fi
+}
+
+checkForShutdown () {
+        # If the shutdown.myriad file exists, then a shutdown is imminent (from external forces)
+        if [ -f shutdown.myriad ]; then
+                exit 0
+        fi
+}
+
+waitForJobTags () {
+	# Wait until this instance has been tagged with a molecule/job to run Myriad
+	export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+	export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+	while [ "$MOLECULE" == "null" ]; do
+		sleep 60
+		export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+		export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
+		echo "Molecule = $MOLECULE" &>> logs/startup-myriad.log
+		echo "Sub-group = $SUBGROUP" &>> logs/startup-myriad.log
+	done
+}
+
 # This script runs as root, but psi4/Intder2005 are installed under ec2-user,
 # so do some fiddling here with the environment and path
 cd /home/ec2-user
@@ -19,33 +68,18 @@ echo $EC2_IP > ip.txt
 echo $EC2_AMI_ID > ami-id.txt
 echo $EC2_INSTANCE_ID > instance-id.txt
 
-# Let the world know we're up and running
-aws ec2 create-tags --tags Key=Name,Value=Waiting --resource $EC2_INSTANCE_ID --region $EC2_REGION
+# Let the world know we're initializing the server
+aws ec2 create-tags --tags Key=Name,Value=Initializing --resource $EC2_INSTANCE_ID --region $EC2_REGION
 
 # Endpoint for the Myriad project on GitHub and for my job files on S3
 export MYRIAD_GITHUB=https://raw.githubusercontent.com/russellthackston/comp-chem-util/master/myriad
 export MYRIAD_VERSION=v1
 export MYRIAD_AWS=http://psi4share.s3-website-us-east-1.amazonaws.com
 
-# Wait until this instance has been tagged with a molecule/job to run
-export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value')
-export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value')
-while [ "$MOLECULE" != "null" ]; do
-	sleep 60
-	export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value')
-	export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value')
-	echo "Molecule = $MOLECULE" &>> logs/startup-myriad.log
-	echo "Sub-group = $SUBGROUP" &>> logs/startup-myriad.log
-done
-
 # Go ahead and create the output files for easy use of the tail command
 touch logs/startup-myriad.log
 touch logs/mm.log
 touch logs/myriad.log
-
-# Download Myriad config file(s)
-echo "Downloading config.txt..." &>> logs/startup-myriad.log
-curl -o config.txt $MYRIAD_AWS/$MOLECULE/config.txt &>> logs/startup-myriad.log
 
 # Update all software and packages
 echo "Updating software" &>> logs/startup-myriad.log
@@ -54,15 +88,6 @@ conda update --yes --all &>> logs/startup-myriad.log
 python34 -m pip install --upgrade pip &>> logs/startup-myriad.log
 python34 -m pip install requests --upgrade &>> logs/startup-myriad.log
 python34 -m pip install psutil --upgrade &>> logs/startup-myriad.log
-
-# Download Myriad
-curl -o libmyriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/libmyriad.py &>> logs/startup-myriad.log
-curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> logs/startup-myriad.log
-curl -o myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> logs/startup-myriad.log
-
-# This molecule requires an MTS file in the BASIS folder
-curl -o mt.gbs $MYRIAD_AWS/$MOLECULE/mt.gbs &>> logs/startup-myriad.log
-mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> logs/startup-myriad.log
 
 # Decide on the number of attached ephemeral storage disks
 # If more than one, join them together as a single logical volume
@@ -93,47 +118,44 @@ fi
 # Export the scratch space location to the environment
 export PSI_SCRATCH=/mnt/scratch
 
-# uncomment this line if you want the instance to be self-terminating when the jobs run out
-# but don't uncomment the pause.myriad line (below)
-touch die.myriad
+# Let the world know we're ready to run jobs
+aws ec2 create-tags --tags Key=Name,Value=Waiting --resource $EC2_INSTANCE_ID --region $EC2_REGION
 
-# uncomment this line if you want the instance to pause Myriad when the jobs run out
-#touch pause.myriad
+waitForJobTags
 
 # Begin running jobs
 while [ true ]; do
 
+	# Download Myriad config file(s)
+	echo "Downloading config.txt..." &>> logs/startup-myriad.log
+	URL=$MYRIAD_AWS/$MOLECULE/config.txt
+	echo "Accessing $URL" &>> logs/startup-myriad.log
+	curl -o config.txt $URL &>> logs/startup-myriad.log
+
+	# This molecule requires an MTS file in the BASIS folder
+	# TO DO: Make this option-driven
+	URL=$MYRIAD_AWS/$MOLECULE/mt.gbs
+	echo "Accessing $URL" &>> logs/startup-myriad.log
+	curl -o mt.gbs $URL &>> logs/startup-myriad.log
+	mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> logs/startup-myriad.log
+
 	# Check for a sub-group of "null" and assume that means no sub-group
 	if [ "$SUBGROUP" == "null" ]; then
-	        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.log 2>&1
+		downloadMyriad
+		echo "Executing Myriad with JobGroup=$MOLECULE" >> logs/mm.log 2>&1
+	        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/mm.log 2>&1
 	else
-	        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> mm.log 2>&1
+		downloadMyriad
+		echo "Executing Myriad with JobGroup=$MOLECULE and JobCategory=$SUBGROUP" >> logs/mm.log 2>&1
+	        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/mm.log 2>&1
 	fi
 
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?" >> myriad.log 2>&1
-        
-        while [ -f pause.myriad ]; do
-                # delete the pause.myriad file to restart Myriad
-                sleep 10
-        done
 
-        # If the die.myriad file exists, shutdown the instance
-        if [ -f die.myriad ]; then
-        	shutdown -h 0
-                exit 0
-        fi
-        # If the shutdown.myriad file exists, then a shutdown is imminent (from external forces)
-        if [ -f shutdown.myriad ]; then
-                exit 0
-        fi
-
-	# Make sure the molecule-subgroup assignment has not changed
-	echo "Sleeping 60 seconds..." &>> logs/startup-myriad.log
-	sleep 60
-	export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value')
-	export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value')
-	echo "Molecule = $MOLECULE" &>> logs/startup-myriad.log
-	echo "Sub-group = $SUBGROUP" &>> logs/startup-myriad.log
+	checkForShutdown
+	checkForDie
+	checkForPause
+	waitForJobTags
 
 done
