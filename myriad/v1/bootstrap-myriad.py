@@ -56,8 +56,9 @@ class Bootstrap:
 				logging.info('Job failed. Attempting another job in 10 seconds...')
 				time.sleep(10)
 			elif result == libmyriad.ResultCode.noaction:
-				logging.info('No jobs found. Retrying in 60 seconds...')
-				time.sleep(60)
+				return
+				#logging.info('No jobs found. Retrying in 60 seconds...')
+				#time.sleep(60)
 
 			while os.path.isfile('pause.myriad'):
 				time.sleep(5)
