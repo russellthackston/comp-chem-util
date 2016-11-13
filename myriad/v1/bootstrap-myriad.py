@@ -41,30 +41,22 @@ class Bootstrap:
 		self.version = version
 		self.downloadMyriad()
 
-		# Go into a loop of running jobs
-		result = libmyriad.ResultCode.success
-		while(True):
+		# run a myriad job
+		m = myriad.Myriad()
+		result = m.runOnce(jobGroup, jobCategory)
 
-			# run a myriad job
-			m = myriad.Myriad()
-			result = m.runOnce(jobGroup, jobCategory)
+		if result == libmyriad.ResultCode.shutdown or os.path.isfile('shutdown.myriad'):
+			logging.info('Shutting down myriad...')
+			return
+		elif result == libmyriad.ResultCode.failure:
+			logging.info('Job failed.')
+		elif result == libmyriad.ResultCode.noaction:
+			logging.info('No more jobs. Sleeping for 60 seconds...')
+			# TO DO: Move this sleep to ec2-user-script-myriad.sh (Needs return codes)
+			time.sleep(60)
 
-			if result == libmyriad.ResultCode.shutdown or os.path.isfile('shutdown.myriad'):
-				logging.info('Shutting down myriad...')
-				return
-			elif result == libmyriad.ResultCode.failure:
-				logging.info('Job failed. Attempting another job in 10 seconds...')
-				time.sleep(10)
-			elif result == libmyriad.ResultCode.noaction:
-				return
-				#logging.info('No jobs found. Retrying in 60 seconds...')
-				#time.sleep(60)
-
-			while os.path.isfile('pause.myriad'):
-				time.sleep(5)
-
-			# Download a (potentially) updated copy of Myriad
-			self.downloadMyriad()
+		# Download a (potentially) updated copy of Myriad
+		self.downloadMyriad()
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--group', dest='group', action='store', type=str, help='Optional group for filtering the requested job')
