@@ -37,6 +37,8 @@ class Myriad:
 		self.region = None
 		self.cmdBacklog = []
 
+		self.memAdjust = 0.9  # Only use 90% of the available memory
+
 	def getInstanceID(self):
 		# Load the configuration values from file
 		f = open('instance-id.txt')
@@ -294,7 +296,8 @@ class Myriad:
 	def makeInputDat(self):
 		# Adjust memory value in input.dat
 		logging.info("Calculating memory value for input.dat...")
-		newmem = "memory " + str(int((self.mem / self.cpus)/1000000)) + " MB"
+		adjustedMem = int(((self.mem * self.memAdjust) / self.cpus)/1000000)
+		newmem = "memory " + str(adjustedMem) + " MB"
 
 		# Creates the input.dat file in the job folder
 		from jobConfig import JobConfig
