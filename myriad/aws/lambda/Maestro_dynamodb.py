@@ -774,3 +774,18 @@ def get_job_results(event, context):
 	else:
 		return results
 
+def processResults(event, context):
+	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+	results = dynamodb.Table('MaestroJobResults')
+	summary = dynamodb.Table('MaestroJobSummary')
+
+	try:
+		for record in event['Records']:
+			newitem = record['dynamodb']['NewImage']
+			logger.info(newitem['JobID']['S'])
+	except:
+		logger.info(event)
+
+
+
+
