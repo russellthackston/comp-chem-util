@@ -368,7 +368,7 @@ class Myriad:
 	def zipJobFolder(self):
 		# Get IP address
 		f = open('ip.txt')
-		self.ip = f.readline()
+		self.ip = f.readline().strip()
 		f.close()
 		if self.ip == None:
 			self.ip = ""
