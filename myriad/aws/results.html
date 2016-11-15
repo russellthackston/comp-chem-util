@@ -17,7 +17,11 @@
 			<tr>
 				<td>Job Group:</td>
 				<td><input id="jobGroup" value="CH2NH2"></input></td>
-				<td><button onclick="loadResults()">Load Results</button></td>
+			</tr>
+			<tr>
+				<td>Job Category:</td>
+				<td><input id="jobCategory" value="TZ"></input></td>
+				<td><button onclick="loadResults()" id="btnLoadResults">Load Results</button></td>
 			</tr>
 			<tr><td>Text to Save:</td></tr>
 			<tr>
@@ -27,7 +31,7 @@
 			</tr>
 			<tr>
 				<td>Filename to Save As:</td>
-				<td><input id="inputFileNameToSaveAs" value="results.csv"></input></td>
+				<td><input id="inputFileNameToSaveAs" value="results.txt"></input></td>
 				<td><button onclick="saveTextAsFile()">Save Text to File</button></td>
 			</tr>
 		</table>

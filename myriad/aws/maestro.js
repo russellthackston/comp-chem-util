@@ -16,14 +16,20 @@ function parseResults(json)
 
 function loadResults()
 {
+	document.getElementById("btnLoadResults").innerHTML = "Loading...";
+	document.getElementById("btnLoadResults").disabled = true;
 	var jobGroup = document.getElementById("jobGroup").value;
+	var jobCategory = document.getElementById("jobCategory").value;
 	var xhttp = new XMLHttpRequest();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			parseResults(this.responseText);
+			document.getElementById("btnLoadResults").disabled = false;
+			document.getElementById("btnLoadResults").innerHTML = "Load Results";
+			document.getElementById("inputFileNameToSaveAs").value = jobGroup + "_" + jobCategory + ".txt"
 		}
 	};
-	xhttp.open("GET", "https://4rmyryq453.execute-api.us-east-1.amazonaws.com/prod?jobGroup=" + jobGroup, true);
+	xhttp.open("GET", "https://4rmyryq453.execute-api.us-east-1.amazonaws.com/prod?jobGroup=" + jobGroup + "&jobCategory=" + jobCategory, true);
 	xhttp.send();
 }
 

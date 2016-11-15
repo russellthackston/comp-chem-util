@@ -55,14 +55,18 @@ This function is publicly available via API Gateway.
 }
 '''
 def get_next_job(event, context):
-	logger.info(str(event))
 	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
 
 	pending = dynamodb.Table('MaestroPendingJobs')
 	executing = dynamodb.Table('MaestroExecutingJobs')
 	jobGroup = None
 	jobCategory = None
-	seg = randint(0,999)
+	seg = randint(0,99)
+	segs = 100
+	if 'nosegments' in event and event['nosegments'] == 'true':
+		seg = 0
+		segs = 1
+
 	if 'jobGroup' in event:
 		if event['jobGroup'] != "":
 			jobGroup = event['jobGroup']
@@ -92,13 +96,13 @@ def get_next_job(event, context):
 					response = pending.scan(
 						FilterExpression=fe,
 						Segment=seg,
-						TotalSegments=1000
+						TotalSegments=segs
 					)
 				else:
 					response = pending.scan(
 						Limit=1,
 						Segment=seg,
-						TotalSegments=1000
+						TotalSegments=segs
 					)
 				logger.info(response)
 			else:
@@ -108,14 +112,14 @@ def get_next_job(event, context):
 						FilterExpression=fe,
 						ExclusiveStartKey=lastEvaluatedKey,
 						Segment=seg,
-						TotalSegments=1000
+						TotalSegments=segs
 					)
 				else:
 					response = pending.scan(
 						Limit=1,
 						ExclusiveStartKey=lastEvaluatedKey,
 						Segment=seg,
-						TotalSegments=1000
+						TotalSegments=segs
 					)
 			if 'LastEvaluatedKey' in response:
 				if len(response["Items"]) > 0:
@@ -147,7 +151,11 @@ def get_next_job(event, context):
 				logger.info(response)
 			return item
 		else:
-			raise Exception('404: No jobs found')
+			if 'nosegments' in event and event['nosegments'] == 'true':
+				raise Exception('404: No jobs found')
+			else:
+				event['nosegments'] = 'true'
+				return get_next_job(event, context)
 
 
 '''
@@ -543,82 +551,111 @@ def processCreateJobsRecord(jobGroup,jobCategory,lines):
 	logger.info("Processing complete.")
 
 '''
-This function returns the next available job from the database, if one exists.
-The job consists of some meta data and the specific job definition 
-(example: 'Displacements' in the form "-1,-1,-2")
-This function is publicly available via API Gateway.
 {
-  "JobID": "12345",
-  "JobGroup": "NS2",
-  "JobCategory": "5Z",
-  "JobName": "NS2-5Z-1",
-  "JobDefinition": {"Displacements":"-1,-1,-2"},
-  "Created": "2016-07-17 15:26:45"
+  "groups" : [
+        {"name" : "CH2NH2"}
+      ],
+  "categories" : [
+        {"name" : "5Z"},
+        {"name" : "QZ"},
+        {"name" : "MT"},
+        {"name" : "MTc"},
+        {"name" : "TZ"}
+    ],
+    "type" : "pending"
 }
 '''
-def get_job_count(event, context):
-	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+def get_all_job_counts(event, context):
+	res = {}
+	for g in event['groups']:
+		group = g['name']
+		cats = {}
+		for c in event['categories']:
+			name = c['name']
+			type = None
+			if 'type' in event:
+				type = event['type']
+			r = get_job_count(type, group, name)
+			cats[name] = r
+		res[group] = cats
+	return res
 
-	tables = []
-	result = {}
-	if 'type' in event:
-		if event['type'] == 'pending':
-			tables = [dynamodb.Table('MaestroPendingJobs')]
-		if event['type'] == 'executing':
-			tables = [dynamodb.Table('MaestroExecutingJobs')]
-		if event['type'] == 'results':
-			tables = [dynamodb.Table('MaestroJobResults')]
+'''
+This function returns summary data abount the contents of the job tables
+'''
+def get_job_count(type = None, group = None, category = None):
+	res = {}
+	if type != None:
+		if type == 'pending':
+			tables = ['MaestroPendingJobs']
+		if type == 'executing':
+			tables = ['MaestroExecutingJobs']
+		if type == 'results':
+			tables = ['MaestroJobResults']
 	else:
-		tables = [dynamodb.Table('MaestroPendingJobs'), dynamodb.Table('MaestroExecutingJobs'), dynamodb.Table('MaestroJobResults')]
+		tables = ['MaestroPendingJobs', 'MaestroExecutingJobs', 'MaestroJobResults']
+
+	for tbl in tables:
+		res[tbl] = get_table_count(tbl, group, category)
+	return res
+
+'''
+Private function
+'''
+def get_table_count(tablename, group = None, category = None):
+	dynamodb = boto3.resource('dynamodb', region_name='us-east-1', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+	table = dynamodb.Table(tablename)
 
 	fe = None
-	if 'group' in event:
-		fe = Attr('JobGroup').eq(event['group'])
+	if tablename == 'MaestroPendingJobs':
+		if group != None:
+			fe = Attr('JobGroup').eq(group)
+		if category != None:
+			fe = fe & Attr('JobCategory').eq(category)
+	if tablename == 'MaestroExecutingJobs':
+		if group != None:
+			fe = Attr('JobGroup').eq(group)
+		if category != None:
+			fe = fe & Attr('JobCategory').eq(category)
+	if tablename == 'MaestroJobResults':
+		if group != None:
+			fe = Attr('job.JobGroup').eq(group)
+		if category != None:
+			fe = fe & Attr('job.JobCategory').eq(category)
 
 	total = 0
-	for tbl in tables:
-		try:
-			lastEvaluatedKey = None
-			count = 0
-			while True:
-				if lastEvaluatedKey == None:
-					if fe == None:
-						response = tbl.scan(
-							Select='COUNT'
-						)
-					else:
-						response = tbl.scan(
-							Select='COUNT',
-							FilterExpression=fe
-						)
-					logger.info(response)
-				else:
-					if fe == None:
-						response = tbl.scan(
-							Select='COUNT',
-							ExclusiveStartKey=lastEvaluatedKey
-						)
-					else:
-						response = tbl.scan(
-							Select='COUNT',
-							ExclusiveStartKey=lastEvaluatedKey,
-							FilterExpression=fe
-						)
-
-				count += response['Count']
-				if 'LastEvaluatedKey' in response:
-					lastEvaluatedKey = response['LastEvaluatedKey']
-				else:
-					break
-
-		except ClientError as e:
-			logger.info(e)
-			raise Exception('500: Database error')
+	lastEvaluatedKey = None
+	while True:
+		if lastEvaluatedKey == None:
+			if fe == None:
+				response = table.scan(
+					Select='COUNT'
+				)
+			else:
+				response = table.scan(
+					Select='COUNT',
+					FilterExpression=fe
+				)
 		else:
-			total += count
-			result[tbl.table_name] = count
-	result['Total'] = total
-	return result
+			if fe == None:
+				response = table.scan(
+					Select='COUNT',
+					ExclusiveStartKey=lastEvaluatedKey
+				)
+			else:
+				response = table.scan(
+					Select='COUNT',
+					ExclusiveStartKey=lastEvaluatedKey,
+					FilterExpression=fe
+				)
+
+		total += response['Count']
+		if 'LastEvaluatedKey' in response:
+			lastEvaluatedKey = response['LastEvaluatedKey']
+		else:
+			break
+
+	return total
 
 '''
 This function moves all executing jobs back to the pending jobs table.
@@ -710,7 +747,7 @@ def get_job_results(event, context):
 
 	table = dynamodb.Table('MaestroJobResults')
 	results = []
-	fe = Attr('JobGroup').eq(event['jobGroup'])
+	fe = Attr('JobGroup').eq(event['jobGroup']) & Attr('JobCategory').eq(event['jobCategory'])
 
 	try:
 		lastEvaluatedKey = None
