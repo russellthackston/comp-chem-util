@@ -37,7 +37,7 @@ class Myriad:
 		self.region = None
 		self.cmdBacklog = []
 
-		self.memAdjust = 0.9  # Only use 90% of the available memory
+		self.memAdjust = 0.75  # Only use 75% of the available memory
 
 	def getInstanceID(self):
 		# Load the configuration values from file
