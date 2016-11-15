@@ -443,16 +443,6 @@ class Myriad:
 		else:
 			logging.warn("Failed to retrieve credentials")
 
-	def uploadOutputFiles(self):
-		self.downloadCredentials()
-		logging.info('Uploading output files...')
-		zips = glob.glob("*.zip")
-		for zip in zips:
-			command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
-			process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-			command = "rm " + str(zip)
-			process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-
 	# Main
 	def runOnce(self, jobGroup=None, jobCategory=None, error=None):
 		logging.info("Myriad.runOnce invoked...")
@@ -511,7 +501,6 @@ class Myriad:
 				self.closeJobFolder()
 				if result != ResultCode.shutdown:
 					self.zipJobFolder()
-					self.uploadOutputFiles()
 					self.clearScratch()
 
 				# if we encounter a known error, try the job again and compensate
