@@ -36,17 +36,33 @@ checkForShutdown () {
 }
 
 waitForJobTags () {
+	echo "Checking for job tags on instance" &>> logs/myriad.log
 	# Wait until this instance has been tagged with a molecule/job to run Myriad
 	export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
 	export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
 	while [ "$MOLECULE" == "null" ]; do
+		echo "No job tags found on instance. Sleeping for 60 seconds..." &>> logs/myriad.log
 		sleep 60
+		echo "Checking for shutdown/die/pause" &>> logs/myriad.log
+		checkForShutdown
+		checkForDie
+		checkForPause
 		export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
 		export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
 		echo "Molecule = $MOLECULE" &>> logs/myriad.log
 		echo "Sub-group = $SUBGROUP" &>> logs/myriad.log
 	done
 }
+
+uploadZipfiles () {
+	for f in *.zip
+	do
+		echo "Uploading $f" >> logs/myriad.log 2>&1
+		aws s3 cp $f s3://myriaddropbox/
+		rm -f $f
+	done
+}
+
 
 # This script runs as root, but psi4/Intder2005 are installed under ec2-user,
 # so do some fiddling here with the environment and path
@@ -148,18 +164,12 @@ while [ true ]; do
 	        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/myriad.log 2>&1
 	fi
 
-	for f in *.zip
-	do
-		echo "Uploading $f" >> logs/myriad.log 2>&1
-		aws s3 cp $f s3://myriaddropbox/
-	done
 
         # when Myriad exits it will go into a loop and wait
         echo "Myriad exit code is $?" >> logs/myriad.log 2>&1
 
 	checkForShutdown
-	checkForDie
-	checkForPause
+	uploadZipfiles
 	waitForJobTags
 
 done
