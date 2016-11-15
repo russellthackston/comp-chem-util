@@ -65,6 +65,7 @@ export EC2_INSTANCE_ID=$(curl http://instance-data/latest/meta-data/instance-id)
 
 # Store off this machine's details for later reference by Myriad
 echo $EC2_IP > ip.txt
+echo $EC2_REGION > region.txt
 echo $EC2_AMI_ID > ami-id.txt
 echo $EC2_INSTANCE_ID > instance-id.txt
 
