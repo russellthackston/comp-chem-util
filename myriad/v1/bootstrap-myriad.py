@@ -65,7 +65,7 @@ parser.add_argument('--server', dest='server', action='store', type=str, help='O
 parser.add_argument('--version', dest='version', action='store', type=str, help='Optional version number of Myriad to update to or "stable"')
 args = parser.parse_args()
 
-logging.basicConfig(filename='myriad.log',level=logging.INFO,format='%(asctime)s %(message)s')
+logging.basicConfig(filename='logs/myriad.log',level=logging.INFO,format='%(asctime)s %(message)s')
 logging.info("Bootstrapping Myriad...")
 
 b = Bootstrap()
