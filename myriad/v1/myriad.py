@@ -167,7 +167,6 @@ class Myriad:
 		myoutput.close()
 		
 	def shutdownMyriad(self):
-		logging.info("shutdownMyriad() invoked")
 		if os.path.isfile('../shutdown.myriad'):
 			logging.info('shutdownMyriad() found shutdown file. Returning True')
 			return True
