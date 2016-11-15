@@ -512,4 +512,7 @@ class Myriad:
 		else:
 			result = ResultCode.noaction
 
+		if result == ResultCode.success:
+			self.doModifyTag("create-tags", "Name", "Waiting")
+
 		return result
