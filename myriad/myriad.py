@@ -34,6 +34,7 @@ class Myriad:
 		self.jobStarted = None
 		self.jobName = None
 		self.ami = None
+		self.region = None
 
 	def getAmi(self):
 		# Load the configuration values from file
@@ -41,6 +42,13 @@ class Myriad:
 		lines = f.readlines()
 		f.close()
 		self.ami = lines[0].strip()
+	
+	def getRegion(self):
+		# Load the configuration values from file
+		f = open('region.txt')
+		lines = f.readlines()
+		f.close()
+		self.region = lines[0].strip()
 	
 	def loadEndpoints(self):
 		# Load the configuration values from file
@@ -134,7 +142,11 @@ class Myriad:
 
 	def getSystemSpecs(self):
 		self.cpus = psutil.cpu_count()
+		cpus = self.readTag('cpus')
 		logging.info('Number of cores set to ' + str(self.cpus))
+		if cpus != None:
+			logging.info('Overriding number of cores to ' + str(self.cpus))
+			self.cpus = int(cpus)
 		os.environ["OMP_NUM_THREADS"] = str(self.cpus)
 		os.environ["MKL_NUM_THREADS"] = str(self.cpus)
 		self.mem = psutil.virtual_memory().available
@@ -361,6 +373,19 @@ class Myriad:
 			logging.warn("Error compressing job folder: " + str(e))
 			
 
+	def readTag(self, key):
+		# aws ec2 describe-tags --filters "Name=resource-id,Values=i-1234567890abcdef8" "Name=key,Values=threads"
+		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
+		command = 'aws ec2 describe-tags --region '+self.region+' --filters "Name=resource-id,Values=' + str(self.ami) + '" "Name=key,Values='+str(key)+'"'
+		proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		stdout, stderr = proc.communicate()
+		tag = json.loads(stdout)
+		if 'Tags' in tag and len(tag['Tags']) > 0 and 'Value' in tag['Tags'][0]:
+			return str(tag['Tags'][0]['Value'])
+		else:
+			return None
+
+
 	def doModifyTag(self, action, key, value):
 		# aws ec2 delete-tags --resources ami-78a54011 --tags Key=Stack
 		# aws ec2 create-tags --resources ami-78a54011 --tags 'Key="[Group]",Value="test"'
@@ -424,6 +449,7 @@ class Myriad:
 		# load the endpoints for web service calls and get ami-id for this machine
 		self.loadEndpoints()
 		self.ami = self.getAmi()
+		self.region = self.getRegion()
 
 		# if no error, get a new job.
 		# if there is an error code, we're going to re-run the job we have
