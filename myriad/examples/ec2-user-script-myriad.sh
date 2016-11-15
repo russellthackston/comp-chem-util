@@ -2,9 +2,9 @@
 
 # Download Myriad
 downloadMyriad () {
-	curl -o libmyriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/libmyriad.py &>> logs/startup-myriad.log
-	curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> logs/startup-myriad.log
-	curl -o myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> logs/startup-myriad.log
+	curl -o libmyriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/libmyriad.py &>> logs/myriad.log
+	curl -o bootstrap-myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/bootstrap-myriad.py &>> logs/myriad.log
+	curl -o myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> logs/myriad.log
 }
 
 checkForPause () {
@@ -13,7 +13,7 @@ checkForPause () {
 		aws ec2 create-tags --tags Key=Name,Value=Paused --resource $EC2_INSTANCE_ID --region $EC2_REGION
 	fi
         while [ "$EC2_PAUSE" != "null" ]; do
-        	echo "Myriad is paused. Remove the PAUSE tag from the instance to restart" >> myriad.log 2>&1
+        	echo "Myriad is paused. Remove the PAUSE tag from the instance to restart" >> logs/myriad.log 2>&1
                 sleep 60
 		export EC2_PAUSE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=PAUSE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
         done
@@ -43,8 +43,8 @@ waitForJobTags () {
 		sleep 60
 		export MOLECULE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=MOLECULE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
 		export SUBGROUP=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=SUBGROUP" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
-		echo "Molecule = $MOLECULE" &>> logs/startup-myriad.log
-		echo "Sub-group = $SUBGROUP" &>> logs/startup-myriad.log
+		echo "Molecule = $MOLECULE" &>> logs/myriad.log
+		echo "Sub-group = $SUBGROUP" &>> logs/myriad.log
 	done
 }
 
@@ -77,17 +77,15 @@ export MYRIAD_VERSION=v1
 export MYRIAD_AWS=http://psi4share.s3-website-us-east-1.amazonaws.com
 
 # Go ahead and create the output files for easy use of the tail command
-touch logs/startup-myriad.log
-touch logs/mm.log
 touch logs/myriad.log
 
 # Update all software and packages
-echo "Updating software" &>> logs/startup-myriad.log
-yum update -y &>> logs/startup-myriad.log
-conda update --yes --all &>> logs/startup-myriad.log
-python34 -m pip install --upgrade pip &>> logs/startup-myriad.log
-python34 -m pip install requests --upgrade &>> logs/startup-myriad.log
-python34 -m pip install psutil --upgrade &>> logs/startup-myriad.log
+echo "Updating software" &>> logs/myriad.log
+yum update -y &>> logs/myriad.log
+conda update --yes --all &>> logs/myriad.log
+python34 -m pip install --upgrade pip &>> logs/myriad.log
+python34 -m pip install requests --upgrade &>> logs/myriad.log
+python34 -m pip install psutil --upgrade &>> logs/myriad.log
 
 # Decide on the number of attached ephemeral storage disks
 # If more than one, join them together as a single logical volume
@@ -96,23 +94,23 @@ export SECONDDISK=$(sudo fdisk -l | grep /dev/xvdc | wc -l)
 if [ "$SECONDDISK" == "1" ]; then
 	# MULTIPLE-INSTANCE-STORES, such as /dev/sdb, /dev/sdc, etc.
 	# This scriplet handles up to 25 drives [b-z]
-	umount /dev/xvdb &>> logs/startup-myriad.log
-	pvcreate /dev/xvd[b-z] --verbose --yes &>> logs/startup-myriad.log
-	vgcreate -s 16M vg /dev/xvd[b-z] --verbose &>> logs/startup-myriad.log
+	umount /dev/xvdb &>> logs/myriad.log
+	pvcreate /dev/xvd[b-z] --verbose --yes &>> logs/myriad.log
+	vgcreate -s 16M vg /dev/xvd[b-z] --verbose &>> logs/myriad.log
 	LVSIZE=$(vgs vg --units k | rev | cut -d " " -f1 | rev | xargs)
 	LVCOUNT=$(pvdisplay | grep /dev/sd | wc -l)
-	lvcreate -L $LVSIZE -n lvg -i$LVCOUNT vg &>> logs/startup-myriad.log
-	mkfs.ext3 /dev/vg/lvg &>> logs/startup-myriad.log
+	lvcreate -L $LVSIZE -n lvg -i$LVCOUNT vg &>> logs/myriad.log
+	mkfs.ext3 /dev/vg/lvg &>> logs/myriad.log
 	mkdir /mnt/scratch
-	mount /dev/vg/lvg /mnt/scratch &>> logs/startup-myriad.log
+	mount /dev/vg/lvg /mnt/scratch &>> logs/myriad.log
 fi
 
 if [ "$SECONDDISK" == "0" ]; then
 	# SINGLE-INSTANCE-STORE, such as /dev/sdb only
 	# Setup the scratch space for psi4
-	mkfs -t ext3 /dev/sdb &>> logs/startup-myriad.log
+	mkfs -t ext3 /dev/sdb &>> logs/myriad.log
 	mkdir /mnt/scratch
-	mount /dev/sdb /mnt/scratch &>> logs/startup-myriad.log
+	mount /dev/sdb /mnt/scratch &>> logs/myriad.log
 fi
 
 # Export the scratch space location to the environment
@@ -127,31 +125,37 @@ waitForJobTags
 while [ true ]; do
 
 	# Download Myriad config file(s)
-	echo "Downloading config.txt..." &>> logs/startup-myriad.log
+	echo "Downloading config.txt..." &>> logs/myriad.log
 	URL=$MYRIAD_AWS/$MOLECULE/config.txt
-	echo "Accessing $URL" &>> logs/startup-myriad.log
-	curl -o config.txt $URL &>> logs/startup-myriad.log
+	echo "Accessing $URL" &>> logs/myriad.log
+	curl -o config.txt $URL &>> logs/myriad.log
 
 	# This molecule requires an MTS file in the BASIS folder
 	# TO DO: Make this option-driven
 	URL=$MYRIAD_AWS/$MOLECULE/mt.gbs
-	echo "Accessing $URL" &>> logs/startup-myriad.log
-	curl -o mt.gbs $URL &>> logs/startup-myriad.log
-	mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> logs/startup-myriad.log
+	echo "Accessing $URL" &>> logs/myriad.log
+	curl -o mt.gbs $URL &>> logs/myriad.log
+	mv mt.gbs /home/ec2-user/miniconda/share/psi4/basis/ &>> logs/myriad.log
 
 	# Check for a sub-group of "null" and assume that means no sub-group
 	if [ "$SUBGROUP" == "null" ]; then
 		downloadMyriad
-		echo "Executing Myriad with JobGroup=$MOLECULE" >> logs/mm.log 2>&1
-	        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/mm.log 2>&1
+		echo "Executing Myriad with JobGroup=$MOLECULE" >> logs/myriad.log 2>&1
+	        python34 bootstrap-myriad.py --group $MOLECULE --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/myriad.log 2>&1
 	else
 		downloadMyriad
-		echo "Executing Myriad with JobGroup=$MOLECULE and JobCategory=$SUBGROUP" >> logs/mm.log 2>&1
-	        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/mm.log 2>&1
+		echo "Executing Myriad with JobGroup=$MOLECULE and JobCategory=$SUBGROUP" >> logs/myriad.log 2>&1
+	        python34 bootstrap-myriad.py --group $MOLECULE --subGroup $SUBGROUP --server $MYRIAD_GITHUB --version $MYRIAD_VERSION >> logs/myriad.log 2>&1
 	fi
 
+	for f in *.zip
+	do
+		echo "Uploading $f" >> logs/myriad.log 2>&1
+		aws s3 cp $f s3://myriaddropbox/
+	done
+
         # when Myriad exits it will go into a loop and wait
-        echo "Myriad exit code is $?" >> myriad.log 2>&1
+        echo "Myriad exit code is $?" >> logs/myriad.log 2>&1
 
 	checkForShutdown
 	checkForDie
