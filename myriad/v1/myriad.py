@@ -395,7 +395,7 @@ class Myriad:
 		command = 'aws ec2 describe-tags --region '+self.region+' --filters "Name=resource-id,Values=' + str(self.ami) + '" "Name=key,Values='+str(key)+'"'
 		proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		stdout, stderr = proc.communicate()
-		tag = json.loads(stdout)
+		tag = json.loads(str(stdout.read()))
 		if 'Tags' in tag and len(tag['Tags']) > 0 and 'Value' in tag['Tags'][0]:
 			return str(tag['Tags'][0]['Value'])
 		else:
