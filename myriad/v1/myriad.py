@@ -155,6 +155,7 @@ class Myriad:
 	def getSystemSpecs(self):
 		self.cpus = psutil.cpu_count()
 		logging.info('Number of cores set to ' + str(self.cpus))
+		
 		os.environ["OMP_NUM_THREADS"] = str(self.cpus)
 		os.environ["MKL_NUM_THREADS"] = str(self.cpus)
 		self.mem = psutil.virtual_memory().available
@@ -165,7 +166,7 @@ class Myriad:
 		df = subprocess.Popen("df", stdout=myoutput)
 		myoutput.flush()
 		myoutput.close()
-		
+
 	def shutdownMyriad(self):
 		if os.path.isfile('../shutdown.myriad'):
 			logging.info('shutdownMyriad() found shutdown file. Returning True')
@@ -385,7 +386,6 @@ class Myriad:
 		except Exception as e:
 			logging.warn("Error compressing job folder: " + str(e))
 			
-
 	def doModifyTag(self, action, key, value):
 		# aws ec2 delete-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack
 		# aws ec2 create-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack,Value=foo
