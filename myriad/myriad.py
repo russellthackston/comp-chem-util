@@ -25,7 +25,6 @@ class Myriad:
 		self.executionID = None
 		self.jobGroup = None
 		self.jobCategory = None
-		self.jobCategory = None
 		self.jobFolder = None
 		self.errors = []
 		self.ip = None
@@ -34,22 +33,35 @@ class Myriad:
 		self.jobStarted = None
 		self.jobName = None
 		self.ami = None
+		self.instanceID = None
 		self.region = None
+		self.cmdBacklog = []
+
+		self.memAdjust = 0.75  # Only use 75% of the available memory
+
+	def getInstanceID(self):
+		# Load the configuration values from file
+		f = open('instance-id.txt')
+		lines = f.readlines()
+		f.close()
+		return lines[0].strip()
 
 	def getAmi(self):
 		# Load the configuration values from file
-		f = open('config.txt')
+		f = open('ami-id.txt')
 		lines = f.readlines()
 		f.close()
-		self.ami = lines[0].strip()
-	
+		return lines[0].strip()
+
 	def getRegion(self):
-		# Load the configuration values from file
-		f = open('region.txt')
-		lines = f.readlines()
-		f.close()
-		self.region = lines[0].strip()
-	
+		# lazy load region value
+		if self.region == None:
+			r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+			if r.status_code == 200:
+				j = json.loads(r.text)
+				self.region = str(j['region'])
+		return self.region
+
 	def loadEndpoints(self):
 		# Load the configuration values from file
 		f = open('config.txt')
@@ -145,7 +157,7 @@ class Myriad:
 		cpus = self.readTag('cpus')
 		logging.info('Number of cores set to ' + str(self.cpus))
 		if cpus != None:
-			logging.info('Overriding number of cores to ' + str(self.cpus))
+			logging.info('Overriding number of cores to: ' + str(self.cpus))
 			self.cpus = int(cpus)
 		os.environ["OMP_NUM_THREADS"] = str(self.cpus)
 		os.environ["MKL_NUM_THREADS"] = str(self.cpus)
@@ -159,7 +171,6 @@ class Myriad:
 		myoutput.close()
 		
 	def shutdownMyriad(self):
-		logging.info("shutdownMyriad() invoked")
 		if os.path.isfile('../shutdown.myriad'):
 			logging.info('shutdownMyriad() found shutdown file. Returning True')
 			return True
@@ -242,7 +253,7 @@ class Myriad:
 		logging.info("Energy = " + str(energy))
 		if energy == None:
 			logging.warn("No energy found")
-			return ResultCode.noaction
+			return ResultCode.failure
 
 		logging.info("Posting results to the web service at " + str(self.maestroAPIGateway))
 		n = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -278,7 +289,7 @@ class Myriad:
 		logging.info("Finished clearing the scratch folder.")
 
 	def makeJobFolder(self):
-		self.jobFolder = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"+str(self.jobID))
+		self.jobFolder = self.jobName + "_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S_"+str(self.jobID))
 		os.mkdir(self.jobFolder)
 		os.chdir(self.jobFolder)
 
@@ -288,7 +299,8 @@ class Myriad:
 	def makeInputDat(self):
 		# Adjust memory value in input.dat
 		logging.info("Calculating memory value for input.dat...")
-		newmem = "memory " + str(int((self.mem / self.cpus)/1000000)) + " MB"
+		adjustedMem = int(((self.mem * self.memAdjust) / self.cpus)/1000000)
+		newmem = "memory " + str(adjustedMem) + " MB"
 
 		# Creates the input.dat file in the job folder
 		from jobConfig import JobConfig
@@ -351,10 +363,15 @@ class Myriad:
 		except:
 			logging.warn("Error posting status. Ignoring.")
 
+		# If there's a failed tagging command in the queue, pop it and run it
+		if len(self.cmdBacklog) > 0:
+			command = self.cmdBacklog.pop()
+			self.runCommand(command)
+
 	def zipJobFolder(self):
 		# Get IP address
 		f = open('ip.txt')
-		self.ip = f.readline()
+		self.ip = f.readline().strip()
 		f.close()
 		if self.ip == None:
 			self.ip = ""
@@ -372,7 +389,6 @@ class Myriad:
 		except Exception as e:
 			logging.warn("Error compressing job folder: " + str(e))
 			
-
 	def readTag(self, key):
 		# aws ec2 describe-tags --filters "Name=resource-id,Values=i-1234567890abcdef8" "Name=key,Values=threads"
 		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
@@ -387,45 +403,60 @@ class Myriad:
 
 
 	def doModifyTag(self, action, key, value):
-		# aws ec2 delete-tags --resources ami-78a54011 --tags Key=Stack
-		# aws ec2 create-tags --resources ami-78a54011 --tags 'Key="[Group]",Value="test"'
+		# aws ec2 delete-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack
+		# aws ec2 create-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack,Value=foo
 		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
-		command = "aws ec2 "+action+" --resources " + str(self.ami) + " --tags Key="+str(key)
+		command = "aws ec2 " + action + " --resources " + str(self.instanceID) + " --region " + str(self.region) + " --tags 'Key="+str(key)
 		if value != None:
-			command += ",Value="+str(value)
-		process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+			command += ',Value="' + str(value) + '"'
+		command += "'"
+		self.runCommand(command)
+	
+	def runCommand(self, command):
+		logging.info("Invoking " + str(command))
+		process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+		out, err = process.communicate()
+		if out:
+			logging.info("doModifyTag() subprocess.Popen stdout...")
+			logging.info(out)
+		if err:
+			logging.warn("doModifyTag() subprocess.Popen stderr...")
+			logging.warn(err)
+		logging.info("doModifyTag() subprocess.Popen returncode...")
+		logging.info(process.returncode)
+
+		# If we get back a RequestLimitExceeded error make a note to try again later...
+		if process.returncode == 255 and "RequestLimitExceeded" in str(err):
+			self.cmdBacklog.append(command)
 
 	def tagInstance(self):
+		self.downloadCredentials()
 		self.doModifyTag("create-tags", "Name", self.jobName)
 		self.doModifyTag("create-tags", "ExecutionID", self.executionID)
 		self.doModifyTag("create-tags", "JobID", self.jobID)
+		self.doModifyTag("create-tags", "StartTime", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+		self.doModifyTag("create-tags", "Displacements", self.displacements)
+		#self.displacements
 	
 	def untagInstance(self):
-		self.doModifyTag("delete-tags", "Name", None)
+		self.downloadCredentials()
+		self.doModifyTag("create-tags", "Name", "Waiting")
 		self.doModifyTag("delete-tags", "ExecutionID", None)
 		self.doModifyTag("delete-tags", "JobID", None)
+		self.doModifyTag("delete-tags", "StartTime", None)
+		self.doModifyTag("delete-tags", "Displacements", None)
 	
 	def downloadCredentials(self):
 		logging.info("Retrieving credentials...")
 		r = requests.get("http://169.254.169.254/latest/meta-data/iam/security-credentials/S3FullAccess")
 		if r.status_code == 200:
-			json = json.loads(r.text)
-			os.environ["AWS_ACCESS_KEY_ID"] = str(json['AccessKeyId'])
-			os.environ["AWS_SECRET_ACCESS_KEY"] = str(json['SecretAccessKey'])
-			os.environ["AWS_SECURITY_TOKEN"] = str(json['Token'])
+			j = json.loads(r.text)
+			os.environ["AWS_ACCESS_KEY_ID"] = str(j['AccessKeyId'])
+			os.environ["AWS_SECRET_ACCESS_KEY"] = str(j['SecretAccessKey'])
+			os.environ["AWS_SECURITY_TOKEN"] = str(j['Token'])
 			logging.info("Credentials exported to environment variables")
 		else:
 			logging.warn("Failed to retrieve credentials")
-
-	def uploadOutputFiles(self):
-		self.downloadCredentials()
-		logging.info('Uploading output files...')
-		zips = glob.glob("*.zip")
-		for zip in zips:
-			command = "aws s3 cp " + str(zip) + " s3://myriaddropbox/"
-			process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-			command = "rm " + str(zip)
-			process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
 
 	# Main
 	def runOnce(self, jobGroup=None, jobCategory=None, error=None):
@@ -449,6 +480,7 @@ class Myriad:
 		# load the endpoints for web service calls and get ami-id for this machine
 		self.loadEndpoints()
 		self.ami = self.getAmi()
+		self.instanceID = self.getInstanceID()
 		self.region = self.getRegion()
 
 		# if no error, get a new job.
@@ -485,7 +517,6 @@ class Myriad:
 				self.closeJobFolder()
 				if result != ResultCode.shutdown:
 					self.zipJobFolder()
-					self.uploadOutputFiles()
 					self.clearScratch()
 
 				# if we encounter a known error, try the job again and compensate
@@ -498,4 +529,6 @@ class Myriad:
 		else:
 			result = ResultCode.noaction
 
+
+		self.untagInstance()
 		return result
