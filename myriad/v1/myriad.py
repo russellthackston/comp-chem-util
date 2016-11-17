@@ -393,13 +393,19 @@ class Myriad:
 		# aws ec2 describe-tags --filters "Name=resource-id,Values=i-1234567890abcdef8" "Name=key,Values=threads"
 		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
 		command = 'aws ec2 describe-tags --region '+self.region+' --filters "Name=resource-id,Values=' + str(self.ami) + '" "Name=key,Values='+str(key)+'"'
+		logger.info(command)
 		proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		stdout, stderr = proc.communicate()
-		tag = json.loads(str(stdout))
-		if 'Tags' in tag and len(tag['Tags']) > 0 and 'Value' in tag['Tags'][0]:
-			return str(tag['Tags'][0]['Value'])
-		else:
-			return None
+		out, err = proc.communicate()
+		if out:
+			logging.info("readTag() subprocess.Popen stdout...")
+			logging.info(out)
+			tag = json.loads(str(out))
+			if 'Tags' in tag and len(tag['Tags']) > 0 and 'Value' in tag['Tags'][0]:
+				return str(tag['Tags'][0]['Value'])
+		if err:
+			logging.warn("readTag() subprocess.Popen stderr...")
+			logging.warn(err)
+		return None
 
 	def doModifyTag(self, action, key, value):
 		# aws ec2 delete-tags --resources ami-78a54011 --region us-east-1 --tags Key=Stack
