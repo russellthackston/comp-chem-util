@@ -154,10 +154,10 @@ class Myriad:
 
 	def getSystemSpecs(self):
 		self.cpus = psutil.cpu_count()
-		cpus = self.readTag('cpus')
 		logging.info('Number of cores set to ' + str(self.cpus))
+		cpus = self.readTag('cpus')
 		if cpus != None:
-			logging.info('Overriding number of cores to: ' + str(self.cpus))
+			logging.info('Overriding number of cores to: ' + str(cpus))
 			self.cpus = int(cpus)
 		os.environ["OMP_NUM_THREADS"] = str(self.cpus)
 		os.environ["MKL_NUM_THREADS"] = str(self.cpus)
