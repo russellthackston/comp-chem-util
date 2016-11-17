@@ -399,7 +399,7 @@ class Myriad:
 		if out:
 			logging.info("readTag() subprocess.Popen stdout...")
 			logging.info(out)
-			tag = json.decode(out)
+			tag = json.loads(str(out, "utf-8"))
 			if 'Tags' in tag and len(tag['Tags']) > 0 and 'Value' in tag['Tags'][0]:
 				return str(tag['Tags'][0]['Value'])
 		if err:
