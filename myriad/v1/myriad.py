@@ -393,7 +393,7 @@ class Myriad:
 		# aws ec2 describe-tags --filters "Name=resource-id,Values=i-1234567890abcdef8" "Name=key,Values=threads"
 		# 'Key="ExecutionID",Value="3bd99202-5d7f-49c2-a350-f1fdf2235ad3"'
 		command = 'aws ec2 describe-tags --region '+self.region+' --filters "Name=resource-id,Values=' + str(self.ami) + '" "Name=key,Values='+str(key)+'"'
-		logger.info(command)
+		logging.info(command)
 		proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = proc.communicate()
 		if out:
