@@ -170,6 +170,7 @@ while [ true ]; do
         echo "Myriad exit code is $?" >> logs/myriad.log 2>&1
 
 	checkForShutdown
+	checkForDie
 	uploadZipfiles
 	waitForJobTags
 
