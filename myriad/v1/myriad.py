@@ -19,6 +19,7 @@ class Myriad:
 		self.maestroAPIGateway = None
 		self.myriadJobsFolderOnAWS = None
 		self.cpus = 1
+		self.cpuOverride = None
 		self.mem = 1
 		self.displacements = None
 		self.jobID = None
@@ -36,7 +37,7 @@ class Myriad:
 		self.instanceID = None
 		self.region = None
 		self.cmdBacklog = []
-
+		self.memMax = 16000
 		self.memAdjust = 0.75  # Only use 75% of the available memory
 
 	def getInstanceID(self):
@@ -159,6 +160,9 @@ class Myriad:
 		if cpus != None:
 			logging.info('Overriding number of cores to: ' + str(cpus))
 			self.cpus = int(cpus)
+		if self.cpuOverride != None:
+			logging.info('Error-based override of number of cores to: ' + str(self.cpuOverride))
+			self.cpus = self.cpuOverride
 		os.environ["OMP_NUM_THREADS"] = str(self.cpus)
 		os.environ["MKL_NUM_THREADS"] = str(self.cpus)
 		self.mem = psutil.virtual_memory().available
@@ -300,6 +304,7 @@ class Myriad:
 		# Adjust memory value in input.dat
 		logging.info("Calculating memory value for input.dat...")
 		adjustedMem = int(((self.mem * self.memAdjust) / self.cpus)/1000000)
+		adjustedMem = max(adjustedMem, self.memMax)
 		newmem = "memory " + str(adjustedMem) + " MB"
 
 		# Creates the input.dat file in the job folder
@@ -333,8 +338,10 @@ class Myriad:
 
 		if len(self.errors) > 0:
 			inputdat = self.jobConfig.inputDat(newmem, self.jobCategory, file07, self.errors[-1])
+			self.cpuOverride = self.jobConfig.checkThreads(self.errors[-1])
 		else:
 			inputdat = self.jobConfig.inputDat(newmem, self.jobCategory, file07)
+			self.cpuOverride = None
 
 		# Write input.dat contents to file
 		f=open('input.dat', 'w')
