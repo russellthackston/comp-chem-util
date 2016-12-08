@@ -387,7 +387,7 @@ class Myriad:
 			logging.info("Compressing job folder...")
 			if result == ResultCode.success:
 				zipname = self.jobFolder + "_ip_" + self.ip + "_success.zip"
-			else if result == ResultCode.failure:
+			elif result == ResultCode.failure:
 				zipname = self.jobFolder + "_ip_" + self.ip + "_failure.zip"
 			myZipFile = zipfile.ZipFile(zipname, "w" )
 			listing = os.listdir(self.jobFolder)
