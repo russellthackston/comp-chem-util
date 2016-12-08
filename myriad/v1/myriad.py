@@ -368,20 +368,28 @@ class Myriad:
 			command = self.cmdBacklog.pop()
 			self.runCommand(command)
 
-	def zipJobFolder(self):
+	def zipJobFolder(self, result):
 		# Get IP address
 		f = open('ip.txt')
 		self.ip = f.readline().strip()
 		f.close()
 		if self.ip == None:
 			self.ip = ""
-		
+
 		try:
 			logging.info("Compressing job folder...")
-			myZipFile = zipfile.ZipFile("ip_" + self.ip + "_" + self.jobFolder + ".zip", "w" )
+			if result == ResultCode.success:
+				zipname = self.jobFolder + "_ip_" + self.ip + "_success.zip"
+			else if result == ResultCode.failure:
+				zipname = self.jobFolder + "_ip_" + self.ip + "_failure.zip"
+			myZipFile = zipfile.ZipFile(zipname, "w" )
 			listing = os.listdir(self.jobFolder)
 			for f in listing:
 				myZipFile.write(self.jobFolder + "/" + f)
+
+			# grab a copy of the Myriad log file, too
+			myZipFile.write("logs/myriad.log")
+
 			myZipFile.close()
 			logging.info("Job folder compressed. Removing original...")
 			shutil.rmtree(self.jobFolder)
@@ -521,7 +529,7 @@ class Myriad:
 
 				self.closeJobFolder()
 				if result != ResultCode.shutdown:
-					self.zipJobFolder()
+					self.zipJobFolder(result)
 					self.clearScratch()
 
 				# if we encounter a known error, try the job again and compensate
