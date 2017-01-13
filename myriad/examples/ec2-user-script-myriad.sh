@@ -103,6 +103,7 @@ conda update --yes --all &>> logs/myriad.log
 python34 -m pip install --upgrade pip &>> logs/myriad.log
 python34 -m pip install requests --upgrade &>> logs/myriad.log
 python34 -m pip install psutil --upgrade &>> logs/myriad.log
+python34 -m pip install numpy --upgrade &>> logs/myriad.log
 
 # Decide on the number of attached ephemeral storage disks
 # If more than one, join them together as a single logical volume
