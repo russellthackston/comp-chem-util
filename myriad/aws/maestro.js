@@ -9,6 +9,8 @@ function parseResults(json)
 			result.job.JobGroup + "\t" + 
 			result.JobCategory + "\t" + 
 			result.job.JobDefinition.Displacements + "\t" + 
+			result.Started + "\t" +
+			result.Completed + "\t" +
 			result.JobResults + "\n";
 	}
 	document.getElementById("inputTextToSave").innerHTML = text;

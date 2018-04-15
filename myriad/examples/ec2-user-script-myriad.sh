@@ -7,6 +7,12 @@ downloadMyriad () {
 	curl -o myriad.py $MYRIAD_GITHUB/$MYRIAD_VERSION/myriad.py &>> logs/myriad.log
 }
 
+# Download Intder
+downloadIntder () {
+	curl -o Intder2005.f https://s3.amazonaws.com/psi4share/Intder2005.f &>> logs/myriad.log
+	curl -o Intder2005.x https://s3.amazonaws.com/psi4share/Intder2005.x &>> logs/myriad.log
+}
+
 checkForPause () {
 	export EC2_PAUSE=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$EC2_INSTANCE_ID" "Name=key,Values=PAUSE" --region $EC2_REGION | jq '.Tags[0].Value' | tr -d '"')
         if [ "$EC2_PAUSE" != "null" ]; then
@@ -67,7 +73,7 @@ uploadZipfiles () {
 # This script runs as root, but psi4/Intder2005 are installed under ec2-user,
 # so do some fiddling here with the environment and path
 cd /home/ec2-user
-export PATH=/home/ec2-user/intder:/home/ec2-user/miniconda/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/opt/aws/bin:/home/ec2-user/.local/bin:/home/ec2-user/bin
+export PATH=$PATH:/home/ec2-user/intder:/home/ec2-user/miniconda/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/opt/aws/bin:/home/ec2-user/.local/bin:/home/ec2-user/bin
 
 # Install jq for json parsing
 yum install jq -y
