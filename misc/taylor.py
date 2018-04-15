@@ -72,6 +72,9 @@ def parseRanges(rangestr):
 libtaylor.setLogFunction(info)
 libtaylor.setParseRanges(parseRanges)
 
+# digits are zero based so add 1 to user input
+args.digits += 1
+
 # Set up indexes
 # If parallelization is enabled, calculate the start and end based on the node number
 #   and number of nodes
